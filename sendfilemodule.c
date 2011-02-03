@@ -216,7 +216,7 @@ method_sendfile(PyObject *self, PyObject *args)
 }
 
 
-#else /* XXX - Linux, should be better checked */
+#elif defined (__linux__)
 #include <sys/sendfile.h>
 
 static PyObject *
