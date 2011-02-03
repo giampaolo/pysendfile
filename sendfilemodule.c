@@ -104,14 +104,15 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     int flags = 0;
     sf.headers = NULL;
     sf.trailers = NULL;
-    static char *keywords[] = {"out", "in",
-                                "offset", "count",
-                                "headers", "trailers", "flags", NULL};
+
+    static char *keywords[] = {"out", "in", "offset", "count",
+                               "headers", "trailers", "flags", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwdict, "iiO&n|OOi:sendfile",
         keywords, &out, &in, PyParse_off_t, &offset, &len,
-        &headers, &trailers, &flags))
+        &headers, &trailers, &flags)) {
             return NULL;
+    }
 
     if (headers != NULL) {
         if (!PySequence_Check(headers)) {
@@ -161,6 +162,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
         PyErr_SetFromErrno(PyExc_OSError);
         return NULL;
     }
+
     goto done;
 
 done:
@@ -265,7 +267,7 @@ method_sendfile(PyObject *self, PyObject *args)
 #endif  /* --- end Linux --- */
 
 static PyMethodDef SendfileMethods[] = {
-    {"sendfile",  method_sendfile, METH_VARARGS,
+    {"sendfile",  method_sendfile,  METH_VARARGS | METH_KEYWORDS,
 "sendfile(out_fd, in_fd, offset, count) = [position, sent]\n"
 "\n"
 "FreeBSD only:\n"
