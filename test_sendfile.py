@@ -16,7 +16,6 @@ import time
 import sendfile
 
 TESTFN = "$testfile"
-TESTFN2 = TESTFN + "2"
 DATA = "12345abcde" * 1024 * 1024  # 10 Mb
 HOST = '127.0.0.1'
 
@@ -92,7 +91,6 @@ class Server(asyncore.dispatcher, threading.Thread):
         raise
 
 
-
 def sendfile_wrapper(sock, file, offset, nbytes):
     """A higher level wrapper representing how an application is
     supposed to use sendfile().
@@ -125,12 +123,12 @@ class TestSendfile(unittest.TestCase):
         self.client.settimeout(1)
         # synchronize by waiting for "220 ready" response
         self.client.recv(1024)
-        #
         self.sockno = self.client.fileno()
         self.file = open(TESTFN, 'rb')
         self.fileno = self.file.fileno()
 
     def tearDown(self):
+        self.file.close()
         self.client.close()
         self.server.stop()
 
