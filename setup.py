@@ -1,5 +1,4 @@
-from setuptools import setup
-from distutils.core import Extension
+from distutils.core import setup, Extension
 
 sendfile_module = Extension('sendfile',
                     sources = ['sendfilemodule.c'])
@@ -7,22 +6,20 @@ sendfile_module = Extension('sendfile',
 setup (name = 'py-sendfile',
        version = '1.2.4',
        description = 'A Python interface to sendfile(2)',
-       author = 'Ben Woolley', 
+       author = 'Ben Woolley',
        author_email = 'user tautolog at gmail',
-       maintainer = 'Stephan Peijnik', 
-       maintainer_email = 'stephan@peijnik.at',
-       url = 'http://code.sp-its.at/projects/py-sendfile',
+       maintainer = "Giampaolo Rodola'",
+       maintainer_email = 'g.rodola@gmail.com',
+       url = 'http://code.google.com/p/py-sendfile/',
        license = 'LGPLv2.1+',
        classifiers = [
-        'Development Status :: 5 - Production/Stable',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)',
         'Operating System :: POSIX :: Linux',
         'Operating System :: POSIX :: BSD :: FreeBSD',
         'Operating System :: POSIX :: AIX',
         'Programming Language :: C',
-   
         ],
        ext_modules = [sendfile_module],
-       zip_safe = False,
        )
