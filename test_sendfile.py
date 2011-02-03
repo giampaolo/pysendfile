@@ -91,7 +91,7 @@ class Server(asyncore.dispatcher, threading.Thread):
             self._active_lock.acquire()
             asyncore.loop(timeout=0.001, count=1)
             self._active_lock.release()
-        asyncore.close_all(ignore_all=True)
+        asyncore.close_all()
 
     def handle_accept(self):
         conn, addr = self.accept()
