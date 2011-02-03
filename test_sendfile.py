@@ -7,48 +7,196 @@ import unittest
 import os
 import sys
 import socket
+import asyncore
+import asynchat
+import threading
+import errno
+import time
 
 import sendfile
 
 TESTFN = "$testfile"
+TESTFN2 = TESTFN + "2"
+DATA = "12345abcde" * 1024 * 1024  # 10 Mb
 HOST = '127.0.0.1'
-#
-FREEBSD = sys.platform.startswith('freebsd')
-OSX = sys.platform.startswith('darwin')
+
+
+class Handler(asynchat.async_chat):
+
+    def __init__(self, conn):
+        asynchat.async_chat.__init__(self, conn)
+        self.in_buffer = []
+        self.push("220 ready\r\n")
+
+    def handle_read(self):
+        data = self.recv(4096)
+        self.in_buffer.append(data)
+
+    def get_data(self):
+        return ''.join(self.in_buffer)
+
+    def handle_close(self):
+        self.close()
+
+    def handle_error(self):
+        raise
+
+
+class Server(asyncore.dispatcher, threading.Thread):
+
+    handler = Handler
+
+    def __init__(self, address):
+        threading.Thread.__init__(self)
+        asyncore.dispatcher.__init__(self)
+        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.bind(address)
+        self.listen(5)
+        self.active = False
+        self.active_lock = threading.Lock()
+        self.host, self.port = self.socket.getsockname()[:2]
+        self.handler_instance = None
+
+    def start(self):
+        assert not self.active
+        self.__flag = threading.Event()
+        threading.Thread.start(self)
+        self.__flag.wait()
+
+    def run(self):
+        self.active = True
+        self.__flag.set()
+        while self.active and asyncore.socket_map:
+            self.active_lock.acquire()
+            asyncore.loop(timeout=0.001, count=1)
+            self.active_lock.release()
+        asyncore.close_all(ignore_all=True)
+
+    def stop(self):
+        assert self.active
+        self.active = False
+        self.join()
+
+    def handle_accept(self):
+        conn, addr = self.accept()
+        self.handler_instance = self.handler(conn)
+
+    def handle_connect(self):
+        self.close()
+    handle_read = handle_connect
+
+    def writable(self):
+        return 0
+
+    def handle_error(self):
+        raise
+
+
+
+def sendfile_wrapper(sock, file, offset, nbytes):
+    """A higher level wrapper representing how an application is
+    supposed to use sendfile().
+    """
+    while 1:
+        try:
+            sent, new_offset = sendfile.sendfile(sock, file, offset, 4096)
+        except OSError, err:
+            if err.errno == errno.ECONNRESET:
+                # disconnected
+                raise
+            elif err.errno == errno.EAGAIN:
+                # we have to retry send data
+                continue
+            else:
+                raise
+        else:
+            assert sent <= nbytes
+            assert (new_offset - offset) <= sent
+            return (sent, new_offset)
 
 
 class TestSendfile(unittest.TestCase):
 
-    def tearDown(self):
-        if os.path.exists(TESTFN):
-            os.remove(TESTFN)
-
-    def test_base(self):
-        f = open(TESTFN, 'wb')
-        f.write("testdata")
-        f.close()
-
-        serv = socket.socket()
-        serv.bind((HOST, 0))
-        serv.listen(5)
-        cli = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        cli.connect((HOST, serv.getsockname()[1]))
-
+    def setUp(self):
+        self.server = Server((HOST, 0))
+        self.server.start()
+        self.client = socket.socket()
+        self.client.connect((self.server.host, self.server.port))
+        self.client.settimeout(1)
+        # synchronize by waiting for "220 ready" response
+        self.client.recv(1024)
         #
-        fp = open(TESTFN, 'rb')
-        self.assertEqual((5, 6), sendfile.sendfile(cli.fileno(), fp.fileno(), 1, 5))
-        recv = serv.accept()[0]
-        self.assertEqual(b"estda", recv.recv(1024))
+        self.sockno = self.client.fileno()
+        self.file = open(TESTFN, 'rb')
+        self.fileno = self.file.fileno()
+
+    def tearDown(self):
+        self.client.close()
+        self.server.stop()
+
+    def test_send_whole_file(self):
+        # normal send
+        sent = 0
+        offset = 0
+        while 1:
+            sent, offset = sendfile_wrapper(self.sockno, self.fileno, offset, 4096)
+            if sent == 0:
+                break
+        time.sleep(.1)
+        data = self.server.handler_instance.get_data()
+        self.assertEqual(hash(data), hash(DATA))
+
+    def test_send_at_certain_offset(self):
+        # start sending a file at a certain offset
+        sent = 0
+        offset = len(DATA) / 2
+        while 1:
+            sent, offset = sendfile_wrapper(self.sockno, self.fileno, offset, 4096)
+            if sent == 0:
+                break
+        time.sleep(.1)
+        data = self.server.handler_instance.get_data()
+        expected = DATA[len(DATA) / 2:]
+        self.assertEqual(hash(data), hash(expected))
+
+    def test_offset_overflow(self):
+        # specify an offset > file size
+        offset = len(DATA) + 4096
+        sent, new_offset = sendfile.sendfile(self.sockno, self.fileno, offset, 4096)
+        self.assertEqual(sent, 0)
+        time.sleep(.1)
+        data = self.server.handler_instance.get_data()
+        self.assertEqual(data, '')
+
+    def test_invalid_offset(self):
+        try:
+            sendfile.sendfile(self.sockno, self.fileno, -1, 4096)
+        except OSError, err:
+            self.assertEqual(err[0], errno.EINVAL)
+        else:
+            self.fail("exception not raised")
+
+    def test_invalid_nbytes(self):
+        try:
+            sendfile.sendfile(self.sockno, self.fileno, 0, -1)
+        except OSError, err:
+            self.assertEqual(err[0], errno.EINVAL)
+        else:
+            self.fail("exception not raised")
+
 
 def test_main():
     tests = [TestSendfile]
     test_suite = unittest.TestSuite()
     for test_class in tests:
         test_suite.addTest(unittest.makeSuite(test_class))
+    f = open(TESTFN, "wb")
+    f.write(DATA)
+    f.close()
     unittest.TextTestRunner(verbosity=2).run(test_suite)
+    os.remove(TESTFN)
 
 
 if __name__ == '__main__':
     test_main()
-
 

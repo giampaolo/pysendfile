@@ -231,7 +231,7 @@ method_sendfile(PyObject *self, PyObject *args)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS;
-    sts = sendfile(out_fd, in_fd, (off_t *) &offset, (ssize_t) count);
+    sts = sendfile(out_fd, in_fd, &offset, count);
     Py_END_ALLOW_THREADS;
     if (sts == -1) {
         PyErr_SetFromErrno(PyExc_OSError);
