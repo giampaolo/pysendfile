@@ -26,6 +26,7 @@ class Handler(asynchat.async_chat):
     def __init__(self, conn):
         asynchat.async_chat.__init__(self, conn)
         self.in_buffer = []
+        self.closed = False
         self.push("220 ready\r\n")
 
     def handle_read(self):
@@ -37,6 +38,7 @@ class Handler(asynchat.async_chat):
 
     def handle_close(self):
         self.close()
+        self.closed = True
 
     def handle_error(self):
         raise
@@ -52,30 +54,44 @@ class Server(asyncore.dispatcher, threading.Thread):
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.bind(address)
         self.listen(5)
-        self.active = False
-        self.active_lock = threading.Lock()
         self.host, self.port = self.socket.getsockname()[:2]
         self.handler_instance = None
+        self._active = False
+        self._active_lock = threading.Lock()
+
+    # --- public API
+
+    @property
+    def running(self):
+        return self._active
 
     def start(self):
-        assert not self.active
+        assert not self.running
         self.__flag = threading.Event()
         threading.Thread.start(self)
         self.__flag.wait()
 
-    def run(self):
-        self.active = True
-        self.__flag.set()
-        while self.active and asyncore.socket_map:
-            self.active_lock.acquire()
-            asyncore.loop(timeout=0.001, count=1)
-            self.active_lock.release()
-        asyncore.close_all(ignore_all=True)
-
     def stop(self):
-        assert self.active
-        self.active = False
+        assert self.running
+        self._active = False
         self.join()
+
+    def wait(self):
+        # wait for handler connection to be closed, then stop the server
+        while not getattr(self.handler_instance, "closed", True):
+            pass
+        self.stop()
+
+    # --- internals
+
+    def run(self):
+        self._active = True
+        self.__flag.set()
+        while self._active and asyncore.socket_map:
+            self._active_lock.acquire()
+            asyncore.loop(timeout=0.001, count=1)
+            self._active_lock.release()
+        asyncore.close_all(ignore_all=True)
 
     def handle_accept(self):
         conn, addr = self.accept()
@@ -90,7 +106,6 @@ class Server(asyncore.dispatcher, threading.Thread):
 
     def handle_error(self):
         raise
-
 
 
 def sendfile_wrapper(sock, file, offset, nbytes, headers=[], trailers=[]):
@@ -135,7 +150,8 @@ class TestSendfile(unittest.TestCase):
     def tearDown(self):
         self.file.close()
         self.client.close()
-        self.server.stop()
+        if self.server.running:
+            self.server.stop()
 
     def test_send_whole_file(self):
         # normal send
@@ -151,7 +167,8 @@ class TestSendfile(unittest.TestCase):
             self.assertEqual(offset, total_sent)
 
         self.assertEqual(total_sent, len(DATA))
-        time.sleep(.1)
+        self.client.close()
+        self.server.wait()
         data = self.server.handler_instance.get_data()
         self.assertEqual(hash(data), hash(DATA))
 
@@ -167,7 +184,8 @@ class TestSendfile(unittest.TestCase):
             total_sent += sent
             self.assertTrue(sent <= nbytes)
 
-        time.sleep(.1)
+        self.client.close()
+        self.server.wait()
         data = self.server.handler_instance.get_data()
         expected = DATA[len(DATA) / 2:]
         self.assertEqual(total_sent, len(expected))
@@ -178,7 +196,8 @@ class TestSendfile(unittest.TestCase):
         offset = len(DATA) + 4096
         sent, new_offset = sendfile.sendfile(self.sockno, self.fileno, offset, 4096)
         self.assertEqual(sent, 0)
-        time.sleep(.1)
+        self.client.close()
+        self.server.wait()
         data = self.server.handler_instance.get_data()
         self.assertEqual(data, '')
 
@@ -209,7 +228,8 @@ class TestSendfile(unittest.TestCase):
 
             expected_data = "x" * 512 + DATA
             self.assertEqual(total_sent, len(expected_data))
-            time.sleep(.1)
+            self.client.close()
+            self.server.wait()
             data = self.server.handler_instance.get_data()
             self.assertEqual(hash(data), hash(expected_data))
 
@@ -228,7 +248,8 @@ class TestSendfile(unittest.TestCase):
 
             expected_data = "x" * 512 + DATA
             self.assertEqual(total_sent, len(expected_data))
-            time.sleep(.1)
+            self.client.close()
+            self.server.wait()
             data = self.server.handler_instance.get_data()
             self.assertEqual(hash(data), hash(expected_data))
 
