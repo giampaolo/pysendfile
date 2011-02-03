@@ -1,0 +1,17 @@
+Metadata-Version: 1.0
+Name: py-sendfile
+Version: 1.2.4
+Summary: A Python interface to sendfile(2)
+Home-page: http://code.sp-its.at/projects/py-sendfile
+Author: Stephan Peijnik
+Author-email: stephan@peijnik.at
+License: LGPLv2.1+
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Operating System :: POSIX :: BSD :: FreeBSD
+Classifier: Operating System :: POSIX :: AIX
+Classifier: Programming Language :: C
