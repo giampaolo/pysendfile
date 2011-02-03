@@ -108,7 +108,6 @@ def sendfile_wrapper(sock, file, offset, nbytes):
             else:
                 raise
         else:
-            assert sent <= nbytes
             assert (new_offset - offset) <= sent
             return (sent, new_offset)
 
@@ -134,27 +133,38 @@ class TestSendfile(unittest.TestCase):
 
     def test_send_whole_file(self):
         # normal send
-        sent = 0
+        total_sent = 0
         offset = 0
+        nbytes = 4096
         while 1:
-            sent, offset = sendfile_wrapper(self.sockno, self.fileno, offset, 4096)
+            sent, offset = sendfile_wrapper(self.sockno, self.fileno, offset, nbytes)
             if sent == 0:
                 break
+            total_sent += sent
+            self.assertTrue(sent <= nbytes)
+            self.assertEqual(offset, total_sent)
+
+        self.assertEqual(total_sent, len(DATA))
         time.sleep(.1)
         data = self.server.handler_instance.get_data()
         self.assertEqual(hash(data), hash(DATA))
 
     def test_send_at_certain_offset(self):
         # start sending a file at a certain offset
-        sent = 0
+        total_sent = 0
         offset = len(DATA) / 2
+        nbytes = 4096
         while 1:
-            sent, offset = sendfile_wrapper(self.sockno, self.fileno, offset, 4096)
+            sent, offset = sendfile_wrapper(self.sockno, self.fileno, offset, nbytes)
             if sent == 0:
                 break
+            total_sent += sent
+            self.assertTrue(sent <= nbytes)
+
         time.sleep(.1)
         data = self.server.handler_instance.get_data()
         expected = DATA[len(DATA) / 2:]
+        self.assertEqual(total_sent, len(expected))
         self.assertEqual(hash(data), hash(expected))
 
     def test_offset_overflow(self):
@@ -166,17 +176,10 @@ class TestSendfile(unittest.TestCase):
         data = self.server.handler_instance.get_data()
         self.assertEqual(data, '')
 
+
     def test_invalid_offset(self):
         try:
             sendfile.sendfile(self.sockno, self.fileno, -1, 4096)
-        except OSError, err:
-            self.assertEqual(err[0], errno.EINVAL)
-        else:
-            self.fail("exception not raised")
-
-    def test_invalid_nbytes(self):
-        try:
-            sendfile.sendfile(self.sockno, self.fileno, 0, -1)
         except OSError, err:
             self.assertEqual(err[0], errno.EINVAL)
         else:
