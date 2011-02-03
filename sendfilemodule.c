@@ -22,6 +22,7 @@
    02111-1307 USA.  */
 
 #include <Python.h>
+#include <stdlib.h>
 
 #if defined(__FreeBSD__) || defined(__DragonFly__)
 #include <sys/types.h>
@@ -106,9 +107,9 @@ method_sendfile(PyObject *self, PyObject *args)
                 string = headerlist;
             } else {
                 //printf("found list\n");
-                string = PyList_GET_ITEM(headerlist, i);                
+                string = PyList_GET_ITEM(headerlist, i);
             }
-            buf = (char *) PyString_AsString(string);                
+            buf = (char *) PyString_AsString(string);
             //printf("buf: %s\n", buf);
             header_iovs[i].iov_base = buf;
             header_iovs[i].iov_len = PyString_GET_SIZE(string);
@@ -121,7 +122,7 @@ method_sendfile(PyObject *self, PyObject *args)
                 string = footerlist;
             } else {
                 //printf("found list\n");
-                string = PyList_GET_ITEM(footerlist, i);                
+                string = PyList_GET_ITEM(footerlist, i);
             }
             buf = (char *) PyString_AsString(string);
             //printf("buf: %s\n", buf);
@@ -171,7 +172,7 @@ method_sendfile(PyObject *self, PyObject *args)
     struct sf_parms sf_iobuf;
     int rc;
 
-    if (!PyArg_ParseTuple(args, "iiLk|s#s#", 
+    if (!PyArg_ParseTuple(args, "iiLk|s#s#",
                           &out_fd, &in_fd, &offset, &count, &hdr, &hdrsize,
 			  &trail, &trailsize))
         return NULL;
@@ -195,7 +196,7 @@ method_sendfile(PyObject *self, PyObject *args)
     sf_iobuf.file_descriptor = in_fd;
     sf_iobuf.file_offset = offset;
     sf_iobuf.file_bytes = count;
-	 
+
     Py_BEGIN_ALLOW_THREADS;
     do {
 	sf_iobuf.bytes_sent = 0; /* Really needed? */
@@ -210,12 +211,12 @@ method_sendfile(PyObject *self, PyObject *args)
         PyErr_SetFromErrno(PyExc_OSError);
         return NULL;
     } else {
-        return Py_BuildValue("Lk", offset, sts);
+        return Py_BuildValue("kL", sts, offset);
     }
 }
 
 
-#else /* Linux, should be better check */
+#else /* XXX - Linux, should be better checked */
 #include <sys/sendfile.h>
 
 static PyObject *
@@ -228,16 +229,19 @@ method_sendfile(PyObject *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "iiLk", &out_fd, &in_fd, &offset, &count))
         return NULL;
-	 
+
     Py_BEGIN_ALLOW_THREADS;
     sts = sendfile(out_fd, in_fd, (off_t *) &offset, (ssize_t) count);
     Py_END_ALLOW_THREADS;
     if (sts == -1) {
         PyErr_SetFromErrno(PyExc_OSError);
         return NULL;
-    } else {
-        return Py_BuildValue("Lk", offset, sts);
     }
+#if !defined(HAVE_LARGEFILE_SUPPORT)
+    return Py_BuildValue("lL", sts, offset);
+#else
+    return Py_BuildValue("LL", sts, offset);
+#endif
 }
 
 #endif
