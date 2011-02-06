@@ -266,7 +266,13 @@ method_sendfile(PyObject *self, PyObject *args)
 
 #endif  /* --- end Linux --- */
 
-static PyMethodDef SendfileMethods[] = {
+
+/*
+ * Define the psutil C module methods and initialize the module.
+ */
+static PyMethodDef
+SendfileMethods[] =
+{
     {"sendfile",  method_sendfile,  METH_VARARGS | METH_KEYWORDS,
 "sendfile(out_fd, in_fd, offset, count) = [position, sent]\n"
 "\n"
@@ -310,28 +316,66 @@ static PyMethodDef SendfileMethods[] = {
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
-static void
-insint (PyObject *d, char *name, int value)
-{
-    PyObject *v = PyInt_FromLong((long) value);
-    if (!v || PyDict_SetItemString(d, name, v))
-        PyErr_Clear();
+struct module_state {
+    PyObject *error;
+};
 
-    Py_XDECREF(v);
-}
-
-PyMODINIT_FUNC
-initsendfile(void)
-{
-    PyObject *m = Py_InitModule("sendfile", SendfileMethods);
-
-    PyObject *d = PyModule_GetDict (m);
-
-#if defined(__FreeBSD__) || defined(__DragonFly__) || defined(_AIX)
-    insint (d, "has_sf_hdtr", 1);
+#if PY_MAJOR_VERSION >= 3
+#define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
 #else
-    insint (d, "has_sf_hdtr", 0);
+#define GETSTATE(m) (&_state)
+static struct module_state _state;
 #endif
-    PyModule_AddStringConstant(m, "__doc__", "Direct interface to FreeBSD and Linux sendfile(2), for sending file data to a socket directly via the kernel.");
-    PyModule_AddStringConstant(m, "__version__", "1.2.4");
+
+#if PY_MAJOR_VERSION >= 3
+
+static int
+sendfile_traverse(PyObject *m, visitproc visit, void *arg) {
+    Py_VISIT(GETSTATE(m)->error);
+    return 0;
 }
+
+static int
+sendfile_clear(PyObject *m) {
+    Py_CLEAR(GETSTATE(m)->error);
+    return 0;
+}
+
+static struct PyModuleDef
+moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "sendfile",
+        NULL,
+        sizeof(struct module_state),
+        SendfileMethods,
+        NULL,
+        sendfile_traverse,
+        sendfile_clear,
+        NULL
+};
+
+#define INITERROR return NULL
+
+PyObject *
+PyInit_sendfile(void)
+
+#else
+#define INITERROR return
+
+void init_sendfile(void)
+#endif
+{
+#if PY_MAJOR_VERSION >= 3
+    PyObject *module = PyModule_Create(&moduledef);
+#else
+    PyObject *module = Py_InitModule("sendfile", SendfileMethods);
+#endif
+    if (module == NULL) {
+        INITERROR;
+    }
+    struct module_state *st = GETSTATE(module);
+#if PY_MAJOR_VERSION >= 3
+    return module;
+#endif
+}
+
