@@ -222,8 +222,9 @@ class TestSendfile(unittest.TestCase):
 
         def test_headers(self):
             total_sent = 0
+            headers = _bytes("x") * 512
             sent, offset = sendfile.sendfile(self.sockno, self.fileno, 0, 4096,
-                                             headers=("x" * 512))
+                                             headers=[headers])
             total_sent += sent
             offset = 4096
             nbytes = 4096
@@ -233,7 +234,7 @@ class TestSendfile(unittest.TestCase):
                     break
                 total_sent += sent
 
-            expected_data = "x" * 512 + DATA
+            expected_data = headers + DATA
             self.assertEqual(total_sent, len(expected_data))
             self.client.close()
             self.server.wait()
@@ -242,8 +243,9 @@ class TestSendfile(unittest.TestCase):
 
         def test_trailers(self):
             total_sent = 0
+            trailers = _bytes("x") * 512
             sent, offset = sendfile.sendfile(self.sockno, self.fileno, 0, 4096,
-                                             trailers=("x" * 512))
+                                             trailers=[trailers])
             total_sent += sent
             offset = 4096
             nbytes = 4096
@@ -253,7 +255,7 @@ class TestSendfile(unittest.TestCase):
                     break
                 total_sent += sent
 
-            expected_data = DATA[:4096] + "x" * 512
+            expected_data = DATA[:4096] + trailers
             expected_data += DATA[4096:]
             self.assertEqual(total_sent, len(expected_data))
             self.client.close()

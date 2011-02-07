@@ -362,7 +362,7 @@ PyInit_sendfile(void)
 #else
 #define INITERROR return
 
-void init_sendfile(void)
+void initsendfile(void)
 #endif
 {
 #if PY_MAJOR_VERSION >= 3
