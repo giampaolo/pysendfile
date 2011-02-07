@@ -320,6 +320,14 @@ struct module_state {
     PyObject *error;
 };
 
+
+static int
+ins(PyObject *module, char *symbol, long value)
+{
+    return PyModule_AddIntConstant(module, symbol, value);
+}
+
+
 #if PY_MAJOR_VERSION >= 3
 #define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
 #else
@@ -370,6 +378,18 @@ void initsendfile(void)
 #else
     PyObject *module = Py_InitModule("sendfile", SendfileMethods);
 #endif
+
+    // constants
+#ifdef SF_NODISKIO
+    PyModule_AddIntConstant(module, "SF_NODISKIO", SF_NODISKIO);
+#endif
+#ifdef SF_MNOWAIT
+    PyModule_AddIntConstant(module, "SF_MNOWAIT", SF_MNOWAIT);
+#endif
+#ifdef SF_SYNC
+    PyModule_AddIntConstant(module, "SF_SYNC", SF_SYNC);
+#endif
+
     if (module == NULL) {
         INITERROR;
     }

@@ -25,7 +25,7 @@ def _bytes(x):
 TESTFN = "$testfile"
 DATA = _bytes("12345abcde" * 1024 * 1024)  # 10 Mb
 HOST = '127.0.0.1'
-LINUX = sys.platform.lower().startswith("linux")
+SUPPORT_HEADERS_TRAILERS = not sys.platform.startswith("linux")
 
 
 class Handler(asynchat.async_chat):
@@ -121,7 +121,7 @@ def sendfile_wrapper(sock, file, offset, nbytes, headers=[], trailers=[]):
     """
     while 1:
         try:
-            if not LINUX:
+            if SUPPORT_HEADERS_TRAILERS:
                 sent, new_offset = sendfile.sendfile(sock, file, offset, nbytes,
                                                      headers, trailers)
             else:
@@ -218,7 +218,7 @@ class TestSendfile(unittest.TestCase):
 
     # --- headers / trailers tests
 
-    if not LINUX:
+    if SUPPORT_HEADERS_TRAILERS:
 
         def test_headers(self):
             total_sent = 0
@@ -262,6 +262,15 @@ class TestSendfile(unittest.TestCase):
             self.server.wait()
             data = self.server.handler_instance.get_data()
             self.assertEqual(hash(data), hash(expected_data))
+
+        if hasattr(sendfile, "SF_NODISKIO"):
+            def test_flags(self):
+                try:
+                    sendfile.sendfile(self.sockno, self.fileno, 0, 4096,
+                                      flags=sendfile.SF_NODISKIO)
+                except OSError as err:
+                    if err.errno not in (errno.EBUSY, errno.EAGAIN):
+                        raise
 
 
 def test_main():
