@@ -323,14 +323,6 @@ struct module_state {
     PyObject *error;
 };
 
-
-static int
-ins(PyObject *module, char *symbol, long value)
-{
-    return PyModule_AddIntConstant(module, symbol, value);
-}
-
-
 #if PY_MAJOR_VERSION >= 3
 #define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
 #else
@@ -339,7 +331,6 @@ static struct module_state _state;
 #endif
 
 #if PY_MAJOR_VERSION >= 3
-
 static int
 sendfile_traverse(PyObject *m, visitproc visit, void *arg) {
     Py_VISIT(GETSTATE(m)->error);
@@ -396,7 +387,6 @@ void initsendfile(void)
     if (module == NULL) {
         INITERROR;
     }
-    struct module_state *st = GETSTATE(module);
 #if PY_MAJOR_VERSION >= 3
     return module;
 #endif
