@@ -15,8 +15,15 @@ import time
 
 import sendfile
 
+PY3 = sys.version_info >= (3,)
+
+def _bytes(x):
+    if PY3:
+        return bytes(x, 'ascii')
+    return x
+
 TESTFN = "$testfile"
-DATA = "12345abcde" * 1024 * 1024  # 10 Mb
+DATA = _bytes("12345abcde" * 1024 * 1024)  # 10 Mb
 HOST = '127.0.0.1'
 LINUX = sys.platform.lower().startswith("linux")
 
@@ -27,14 +34,14 @@ class Handler(asynchat.async_chat):
         asynchat.async_chat.__init__(self, conn)
         self.in_buffer = []
         self.closed = False
-        self.push("220 ready\r\n")
+        self.push(_bytes("220 ready\r\n"))
 
     def handle_read(self):
         data = self.recv(4096)
         self.in_buffer.append(data)
 
     def get_data(self):
-        return ''.join(self.in_buffer)
+        return _bytes('').join(self.in_buffer)
 
     def handle_close(self):
         self.close()
@@ -79,7 +86,7 @@ class Server(asyncore.dispatcher, threading.Thread):
     def wait(self):
         # wait for handler connection to be closed, then stop the server
         while not getattr(self.handler_instance, "closed", True):
-            pass
+            time.sleep(0.001)
         self.stop()
 
     # --- internals
@@ -119,7 +126,7 @@ def sendfile_wrapper(sock, file, offset, nbytes, headers=[], trailers=[]):
                                                      headers, trailers)
             else:
                 sent, new_offset = sendfile.sendfile(sock, file, offset, nbytes)
-        except OSError, err:
+        except OSError as err:
             if err.errno == errno.ECONNRESET:
                 # disconnected
                 raise
@@ -175,7 +182,7 @@ class TestSendfile(unittest.TestCase):
     def test_send_at_certain_offset(self):
         # start sending a file at a certain offset
         total_sent = 0
-        offset = len(DATA) / 2
+        offset = int(len(DATA) / 2)
         nbytes = 4096
         while 1:
             sent, offset = sendfile_wrapper(self.sockno, self.fileno, offset, nbytes)
@@ -187,7 +194,7 @@ class TestSendfile(unittest.TestCase):
         self.client.close()
         self.server.wait()
         data = self.server.handler_instance.get_data()
-        expected = DATA[len(DATA) / 2:]
+        expected = DATA[int(len(DATA) / 2):]
         self.assertEqual(total_sent, len(expected))
         self.assertEqual(hash(data), hash(expected))
 
@@ -199,13 +206,13 @@ class TestSendfile(unittest.TestCase):
         self.client.close()
         self.server.wait()
         data = self.server.handler_instance.get_data()
-        self.assertEqual(data, '')
+        self.assertEqual(data, _bytes(''))
 
     def test_invalid_offset(self):
         try:
             sendfile.sendfile(self.sockno, self.fileno, -1, 4096)
-        except OSError, err:
-            self.assertEqual(err[0], errno.EINVAL)
+        except OSError as err:
+            self.assertEqual(err.errno, errno.EINVAL)
         else:
             self.fail("exception not raised")
 
