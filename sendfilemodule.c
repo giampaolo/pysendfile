@@ -1,10 +1,18 @@
-/* py-sendfile 1.0
+/*
+ * $Id$
+ */
+
+/* py-sendfile
+
    A Python module interface to sendfile(2)
    Copyright (C) 2005 Ben Woolley <user tautolog at gmail>
 
    The AIX support code is:
 
    Copyright (C) 2008,2009 Niklas Edmundsson <nikke@acc.umu.se>
+
+   Currently maintained by Giampaolo Rodola'
+   Copyright (C) 2011 <g.rodola@gmail.com>
 
    This is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -23,7 +31,6 @@
 
 #include <Python.h>
 #include <stdlib.h>
-
 
 
 /* --- begin FreeBSD / Dragonfly --- */
@@ -267,9 +274,6 @@ method_sendfile(PyObject *self, PyObject *args)
 #endif  /* --- end Linux --- */
 
 
-/*
- * Define the psutil C module methods and initialize the module.
- */
 static PyMethodDef
 SendfileMethods[] =
 {
@@ -311,8 +315,7 @@ SendfileMethods[] =
 "sendfile(out_socket.fileno(), in_file.fileno(), int_start, int_len, ([magic, metadata_len, metadata, data_len], md5))\n"
 "\n"
 "Although the FreeBSD sendfile(2) requires the socket file descriptor to be specified as the second argument, this function will ALWAYS require the socket as the first argument, like Linux and Solaris. Also, if an sf_hdtr is specified, the function will return the total data sent including all of the headers and trailers. Note that item 0 of the return value, the file pointer position, is determined on FreeBSD only by adding offset and count, so if not all of the data has been sent, this value will be wrong. You will have to use the value in item 1, which tells you how much total data has actually been sent, and be aware that header and trailer data are included in that value, so you may need to reconstruct the headers and/or trailers yourself if you would like to find out exactly which data has been sent. However, if you do not send any headers or trailers, you can just add item 1 to where you started to find out where you need to start from again. I do not consider this much of a problem because if you are sending header and trailer data, the protocol will likely not allow you to just keep sending from where the failure occured without getting into complexities, anyway.\n"
-"\n"
-"The variable has_sf_hdtr is provided for determining whether sf_hdtr is supported."},
+    },
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 

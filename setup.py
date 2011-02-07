@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# $Id$
+
 from distutils.core import setup, Extension
 
 sendfile_module = Extension('sendfile',
