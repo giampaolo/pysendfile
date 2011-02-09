@@ -106,7 +106,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     off_t offset;
     PyObject *headers = NULL, *trailers = NULL;
     Py_buffer *hbuf, *tbuf;
-    off_t sbytes;
+    off_t sent;
     struct sf_hdtr sf;
     int flags = 0;
     sf.headers = NULL;
@@ -147,7 +147,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     }
 
     Py_BEGIN_ALLOW_THREADS
-    ret = sendfile(in, out, offset, len, &sf, &sbytes, flags);
+    ret = sendfile(in, out, offset, len, &sf, &sent, flags);
     Py_END_ALLOW_THREADS
 
     if (sf.headers != NULL)
@@ -157,7 +157,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 
     if (ret < 0) {
         if ((errno == EAGAIN) || (errno == EBUSY)) {
-            if (sbytes != 0) {
+            if (sent != 0) {
                 goto done;
             }
             else {
@@ -174,9 +174,9 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 
 done:
     #if !defined(HAVE_LARGEFILE_SUPPORT)
-        return Py_BuildValue("ll", sbytes, offset + sbytes);
+        return Py_BuildValue("l", sent);
     #else
-        return Py_BuildValue("LL", sbytes, offset + sbytes);
+        return Py_BuildValue("L", sent);
     #endif
 }
 /* --- end FreeBSD / Dragonfly --- */
@@ -235,8 +235,13 @@ method_sendfile(PyObject *self, PyObject *args)
     if (rc == -1) {
         PyErr_SetFromErrno(PyExc_OSError);
         return NULL;
-    } else {
-        return Py_BuildValue("kL", sts, offset);
+    }
+    else {
+    #if !defined(HAVE_LARGEFILE_SUPPORT)
+        return Py_BuildValue("l", sts);
+    #else
+        return Py_BuildValue("L", sts);
+    #endif
     }
 }
 /* --- end AIX --- */

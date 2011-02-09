@@ -222,15 +222,16 @@ class TestSendfile(unittest.TestCase):
         def test_headers(self):
             total_sent = 0
             headers = _bytes("x") * 512
-            sent, offset = sendfile.sendfile(self.sockno, self.fileno, 0, 4096,
-                                             headers=[headers])
+            sent = sendfile.sendfile(self.sockno, self.fileno, 0, 4096,
+                                     headers=[headers])
             total_sent += sent
             offset = 4096
             nbytes = 4096
             while 1:
-                sent, offset = sendfile_wrapper(self.sockno, self.fileno, offset, nbytes)
+                sent = sendfile_wrapper(self.sockno, self.fileno, offset, nbytes)
                 if sent == 0:
                     break
+                offset += sent
                 total_sent += sent
 
             expected_data = headers + DATA
@@ -243,15 +244,16 @@ class TestSendfile(unittest.TestCase):
         def test_trailers(self):
             total_sent = 0
             trailers = _bytes("x") * 512
-            sent, offset = sendfile.sendfile(self.sockno, self.fileno, 0, 4096,
+            sent = sendfile.sendfile(self.sockno, self.fileno, 0, 4096,
                                              trailers=[trailers])
             total_sent += sent
             offset = 4096
             nbytes = 4096
             while 1:
-                sent, offset = sendfile_wrapper(self.sockno, self.fileno, offset, nbytes)
+                sent = sendfile_wrapper(self.sockno, self.fileno, offset, nbytes)
                 if sent == 0:
                     break
+                offset += sent
                 total_sent += sent
 
             expected_data = DATA[:4096] + trailers
