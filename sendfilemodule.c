@@ -252,22 +252,22 @@ method_sendfile(PyObject *self, PyObject *args)
     int out_fd, in_fd;
     off_t offset;
     size_t count;
-    ssize_t sts;
+    ssize_t sent;
 
     if (!PyArg_ParseTuple(args, "iiLk", &out_fd, &in_fd, &offset, &count))
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS;
-    sts = sendfile(out_fd, in_fd, &offset, count);
+    sent = sendfile(out_fd, in_fd, &offset, count);
     Py_END_ALLOW_THREADS;
-    if (sts == -1) {
+    if (sent == -1) {
         PyErr_SetFromErrno(PyExc_OSError);
         return NULL;
     }
 #if !defined(HAVE_LARGEFILE_SUPPORT)
-    return Py_BuildValue("lL", sts, offset);
+    return Py_BuildValue("l", sent);
 #else
-    return Py_BuildValue("LL", sts, offset);
+    return Py_BuildValue("L", sent);
 #endif
 }
 
@@ -281,11 +281,10 @@ SendfileMethods[] =
 "sendfile(out, in, offset, nbytes)\n"
 "sendfile(out, in, offset, nbytes, headers=None, trailers=None, flags=0)\n"
 "\n"
-"Copy *nbytes* bytes from file descriptor *in* to file descriptor *out*.\n"
+"Copy *nbytes* bytes from file descriptor *in* to file descriptor *out*\n"
+"starting from *offset* and return the number of bytes sent.\n"
 "\n"
-"The first case is supported by all platforms.\n"
-"Return value is a tuple, (byteswritten, offset), where offset is a value\n"
-"pointing to the byte following the last byte read.\n"
+"The first function notation is supported by all platforms.\n"
 "\n"
 "On Linux, if *offset* is given as `None`, the bytes are read from the\n"
 "current position of *in* and the position of *in* is updated. It returns\n"

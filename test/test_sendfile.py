@@ -122,10 +122,10 @@ def sendfile_wrapper(sock, file, offset, nbytes, headers=[], trailers=[]):
     while 1:
         try:
             if SUPPORT_HEADERS_TRAILERS:
-                sent, new_offset = sendfile.sendfile(sock, file, offset, nbytes,
+                return sendfile.sendfile(sock, file, offset, nbytes,
                                                      headers, trailers)
             else:
-                sent, new_offset = sendfile.sendfile(sock, file, offset, nbytes)
+                return sendfile.sendfile(sock, file, offset, nbytes)
         except OSError as err:
             if err.errno == errno.ECONNRESET:
                 # disconnected
@@ -135,9 +135,6 @@ def sendfile_wrapper(sock, file, offset, nbytes, headers=[], trailers=[]):
                 continue
             else:
                 raise
-        else:
-            assert (new_offset - offset) <= sent
-            return (sent, new_offset)
 
 
 class TestSendfile(unittest.TestCase):
@@ -166,10 +163,11 @@ class TestSendfile(unittest.TestCase):
         offset = 0
         nbytes = 4096
         while 1:
-            sent, offset = sendfile_wrapper(self.sockno, self.fileno, offset, nbytes)
+            sent = sendfile_wrapper(self.sockno, self.fileno, offset, nbytes)
             if sent == 0:
                 break
             total_sent += sent
+            offset += sent
             self.assertTrue(sent <= nbytes)
             self.assertEqual(offset, total_sent)
 
@@ -185,10 +183,11 @@ class TestSendfile(unittest.TestCase):
         offset = int(len(DATA) / 2)
         nbytes = 4096
         while 1:
-            sent, offset = sendfile_wrapper(self.sockno, self.fileno, offset, nbytes)
+            sent = sendfile_wrapper(self.sockno, self.fileno, offset, nbytes)
             if sent == 0:
                 break
             total_sent += sent
+            offset += sent
             self.assertTrue(sent <= nbytes)
 
         self.client.close()
@@ -201,7 +200,7 @@ class TestSendfile(unittest.TestCase):
     def test_offset_overflow(self):
         # specify an offset > file size
         offset = len(DATA) + 4096
-        sent, new_offset = sendfile.sendfile(self.sockno, self.fileno, offset, 4096)
+        sent = sendfile.sendfile(self.sockno, self.fileno, offset, 4096)
         self.assertEqual(sent, 0)
         self.client.close()
         self.server.wait()
