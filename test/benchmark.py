@@ -41,7 +41,7 @@ def create_file(filename, size):
     f = open(filename, 'wb')
     bytes = 0
     while 1:
-        data = "x" * 1024
+        data = "x" * BUFFER_SIZE
         bytes += len(data)
         f.write(data)
         if bytes >= size:
@@ -135,6 +135,7 @@ def main():
     t1 = timeit.Timer(setup="from __main__ import Client; client = Client()",
                       stmt="client.retr()").timeit(number=1)
     server.terminate()
+    server.join()
 
     # CPU time: use send()
     server = Process(target=start_server, kwargs={"use_sendfile":False})
@@ -143,6 +144,7 @@ def main():
     t2 = timeit.Timer(setup="from __main__ import Client; client = Client()",
                       stmt="client.retr()").timeit(number=1)
     server.terminate()
+    server.join()
 
     # MB/sec: use sendfile()
     server = Process(target=start_server, kwargs={"use_sendfile":True,
@@ -152,6 +154,7 @@ def main():
     client = Client()
     bytes1 = client.retr_for_1_sec()
     server.terminate()
+    server.join()
 
     # MB/sec: use sendfile()
     server = Process(target=start_server, kwargs={"use_sendfile":False,
@@ -161,6 +164,7 @@ def main():
     client = Client()
     bytes2 = client.retr_for_1_sec()
     server.terminate()
+    server.join()
 
     print "=== send() ==="
     print "cpu:   %.2f usec/pass" % (1000000 * t2 / 100000)
