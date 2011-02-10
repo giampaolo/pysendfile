@@ -73,7 +73,7 @@ class Client:
         return bytes_recv
 
 
-def start_server(use_sendfile=True, keep_sending=False):
+def start_server(use_sendfile, keep_sending=False):
     sock = socket.socket()
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind((HOST, PORT))
@@ -110,7 +110,8 @@ def start_server(use_sendfile=True, keep_sending=False):
                         continue
                     else:
                         break
-                offset += sent
+                else:
+                    offset += sent
     file.close()
     conn.close()
 
@@ -120,8 +121,7 @@ def main():
         print "creating big file . . ."
         create_file(BIGFILE, BIGFILE_SIZE)
         print "starting benchmark . . .\n"
-
-    #atexit.register(lambda: os.remove(BIGFILE))
+    atexit.register(lambda: os.remove(BIGFILE))
 
     # CPU time: use sendfile()
     server = Process(target=start_server, kwargs={"use_sendfile":True})
