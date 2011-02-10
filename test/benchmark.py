@@ -5,7 +5,7 @@
 A simle benchmark script which compares plain send() and sendfile()
 performances in terms of CPU time spent and bytes transmitted per second.
 
-This is what I get on my Linux 2.6.35-22 box, Intel core duo 3.1 GHz:
+This is what I get on my Linux 2.6.35-22 box, Intel core-duo, 3.1 GHz:
 
 === send() ===
 cpu:   6.60 usec/pass
@@ -20,7 +20,6 @@ Working with python 2.x only.
 """
 
 import socket
-import sys
 import os
 import errno
 import timeit
@@ -74,6 +73,12 @@ class Client:
 
 
 def start_server(use_sendfile, keep_sending=False):
+    """A simple test server which sends a file once a client connects.
+    use_sendfile decides whether using sendfile() or plain sendall()
+    method.
+    If keep_sending is True restart sending file when EOF is reached
+    instead of disconnecting.
+    """
     sock = socket.socket()
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind((HOST, PORT))
@@ -148,7 +153,6 @@ def main():
     bytes1 = client.retr_for_1_sec()
     server.terminate()
 
-    # MB/sec: use send()
     # MB/sec: use sendfile()
     server = Process(target=start_server, kwargs={"use_sendfile":False,
                                                   "keep_sending":True})
