@@ -32,6 +32,7 @@
 #include <Python.h>
 #include <stdlib.h>
 
+int unsupported = 0;
 
 /* --- begin FreeBSD / Dragonfly --- */
 #if defined(__FreeBSD__) || defined(__DragonFly__)
@@ -276,7 +277,18 @@ method_sendfile(PyObject *self, PyObject *args)
 #endif
 }
 
-#endif  /* --- end Linux --- */
+#else /* --- end Linux --- */
+int unsupported = 1;
+
+static PyObject *
+method_sendfile(PyObject *self, PyObject *args)
+{
+    PyErr_SetString(PyExc_NotImplementedError, "platform not supported");
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+#endif
+
 
 
 static PyMethodDef
@@ -363,7 +375,6 @@ void initsendfile(void)
 #else
     PyObject *module = Py_InitModule("sendfile", SendfileMethods);
 #endif
-
     // constants
 #ifdef SF_NODISKIO
     PyModule_AddIntConstant(module, "SF_NODISKIO", SF_NODISKIO);
@@ -378,6 +389,11 @@ void initsendfile(void)
     if (module == NULL) {
         INITERROR;
     }
+
+    if (unsupported == 1) {
+        PyErr_SetString(PyExc_NotImplementedError, "platform not supported");
+    }
+
 #if PY_MAJOR_VERSION >= 3
     return module;
 #endif
