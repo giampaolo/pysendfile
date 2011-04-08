@@ -65,5 +65,6 @@ and Dragonfly BSD support.
 Later on Niklas Edmundsson took over maintenance.
 
 It has almost completely rewritten by Giampaolo Rodola' (g.rodola@gmail.com)
-who is now maintaining the module.
+adding support for OSX, FreeBSD constants, Python 3 and who is now maintaining
+the module.
 
