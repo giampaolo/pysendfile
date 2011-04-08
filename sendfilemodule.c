@@ -79,36 +79,40 @@ _parse_off_t(PyObject* arg, void* addr)
 }
 
 
-static int
+static Py_ssize_t
 iov_setup(struct iovec **iov, Py_buffer **buf, PyObject *seq, int cnt, int type)
 {
     int i, j;
+    Py_ssize_t blen, total = 0;
+
     *iov = PyMem_New(struct iovec, cnt);
     if (*iov == NULL) {
         PyErr_NoMemory();
-        return 0;
+        return total;
     }
     *buf = PyMem_New(Py_buffer, cnt);
     if (*buf == NULL) {
         PyMem_Del(*iov);
         PyErr_NoMemory();
-        return 0;
+        return total;
     }
 
     for (i = 0; i < cnt; i++) {
-        if (PyObject_GetBuffer(PySequence_GetItem(seq, i), &(*buf)[i],
-                type) == -1) {
+        if (PyObject_GetBuffer(PySequence_GetItem(seq, i),
+                               &(*buf)[i], type) == -1) {
             PyMem_Del(*iov);
             for (j = 0; j < i; j++) {
                 PyBuffer_Release(&(*buf)[j]);
-           }
+            }
             PyMem_Del(*buf);
             return 0;
         }
         (*iov)[i].iov_base = (*buf)[i].buf;
-        (*iov)[i].iov_len = (*buf)[i].len;
+        blen = (*buf)[i].len;
+        (*iov)[i].iov_len = blen;
+        total += blen;
     }
-    return 1;
+    return total;
 }
 
 static void
@@ -177,7 +181,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
             if (sf.trl_cnt > 0 &&
                 !(i = iov_setup(&(sf.trailers), &tbuf,
                                 trailers, sf.trl_cnt, PyBUF_SIMPLE)))
-                return NULL;
+                 return NULL;
 #ifdef __APPLE__
             sent += i;
 #endif
