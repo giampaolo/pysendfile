@@ -126,7 +126,8 @@ def sendfile_wrapper(sock, file, offset, nbytes, headers=[], trailers=[]):
                                                      headers, trailers)
             else:
                 return sendfile.sendfile(sock, file, offset, nbytes)
-        except OSError as err:
+        except OSError:
+            err = sys.exc_info()[1]
             if err.errno == errno.EAGAIN:  # retry
                 continue
             raise
@@ -205,7 +206,8 @@ class TestSendfile(unittest.TestCase):
     def test_invalid_offset(self):
         try:
             sendfile.sendfile(self.sockno, self.fileno, -1, 4096)
-        except OSError as err:
+        except OSError:
+            err = sys.exc_info()[1]
             self.assertEqual(err.errno, errno.EINVAL)
         else:
             self.fail("exception not raised")
@@ -239,15 +241,16 @@ class TestSendfile(unittest.TestCase):
         def test_trailers(self):
             TESTFN2 = TESTFN + "2"
             f = open(TESTFN2, 'wb')
-            f.write(b"abcde")
+            f.write(_bytes("abcde"))
             f.close()
             f = open(TESTFN2, 'rb')
             try:
-                sendfile.sendfile(self.sockno, f.fileno(), 0, 4096, trailers=[b"12345"])
+                sendfile.sendfile(self.sockno, f.fileno(), 0, 4096,
+                                  trailers=[_bytes("12345")])
                 self.client.close()
                 self.server.wait()
                 data = self.server.handler_instance.get_data()
-                self.assertEqual(data, b"abcde12345")
+                self.assertEqual(data, _bytes("abcde12345"))
             finally:
                 os.remove(TESTFN2)
 
@@ -256,7 +259,8 @@ class TestSendfile(unittest.TestCase):
                 try:
                     sendfile.sendfile(self.sockno, self.fileno, 0, 4096,
                                       flags=sendfile.SF_NODISKIO)
-                except OSError as err:
+                except OSError:
+                    err = sys.exc_info()[1]
                     if err.errno not in (errno.EBUSY, errno.EAGAIN):
                         raise
 
