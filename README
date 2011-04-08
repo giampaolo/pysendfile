@@ -1,0 +1,69 @@
+
+=================================
+    About
+=================================
+
+A python interface to sendfile(2) system call:
+http://code.google.com/p/py-sendfile/
+
+
+=================================
+    Install
+=================================
+
+$ sudo setup.py install
+
+...or:
+
+$ easy_install py-sendfile
+
+
+=================================
+    Supported platforms
+=================================
+
+Linux
+OSX
+FreeBSD
+Dragon Fly BSD
+AIX (non properly tested)
+
+
+=================================
+    Example usage
+=================================
+
+import socket
+import errno
+from sendfile import sendfile
+
+file = open("somefile", "rb")
+sock = socket.socket()
+sock.connect(("127.0.0.1", 8021))
+offset = 0
+
+while 1:
+    try:
+        sent = sendfile(sock.fileno(), file.fileno(), offset, 4096)
+    except OSError, err:
+        if err.errno == errno.EAGAIN:  # retry
+            continue
+        raise
+    else:
+        if sent == 0:
+            break  # done
+        offset += sent
+
+
+=================================
+    Authors
+=================================
+
+py-sendfile was originally written by Ben Woolley including Linux, FreeBSD
+and Dragonfly BSD support.
+
+Later on Niklas Edmundsson took over maintenance.
+
+It has almost completely rewritten by Giampaolo Rodola' (g.rodola@gmail.com)
+who is now maintaining the module.
+
