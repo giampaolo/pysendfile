@@ -2,32 +2,43 @@
  * $Id$
  */
 
-/* py-sendfile
-
-   A Python module interface to sendfile(2)
-   Copyright (C) 2005 Ben Woolley <user tautolog at gmail>
-
-   The AIX support code is:
-
-   Copyright (C) 2008,2009 Niklas Edmundsson <nikke@acc.umu.se>
-
-   Currently maintained by Giampaolo Rodola'
-   Copyright (C) 2011 <g.rodola@gmail.com>
-
-   This is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
-
-   This is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library; if not, write to the Free
-   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-   02111-1307 USA.  */
+/*
+ * py-sendfile
+ *
+ * A Python module interface to sendfile(2)
+ *
+ * Original author:
+ *     Copyright (C) 2005 Ben Woolley <user tautolog at gmail>
+ *
+ * The AIX support code is:
+ *     Copyright (C) 2008,2009 Niklas Edmundsson <nikke@acc.umu.se>
+ *
+ * Currently maintained by Giampaolo Rodola'
+ *     Copyright (C) 2011 <g.rodola@gmail.com>
+ *
+ *
+ *  The MIT License
+ *
+ *  Copyright (c) <2011> <Ben Woolley, Niklas Edmundsson, Giampaolo Rodola'>
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in
+ *  all copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ *  THE SOFTWARE.
+*/
 
 #include <Python.h>
 #include <stdlib.h>
@@ -47,7 +58,7 @@ PyParse_off_t(PyObject* arg, void* addr)
     *((off_t*)addr) = PyLong_AsLong(arg);
 #else
     *((off_t*)addr) = PyLong_Check(arg) ? PyLong_AsLongLong(arg)
- : PyLong_AsLong(arg);
+: PyLong_AsLong(arg);
 #endif
     if (PyErr_Occurred())
         return 0;
@@ -159,10 +170,12 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     if (ret < 0) {
         if ((errno == EAGAIN) || (errno == EBUSY)) {
             if (sent != 0) {
+                // some data has been sent
                 goto done;
             }
             else {
-                // upper application is supposed to retry
+                // no data has been sent; upper application is supposed
+                // to retry on EAGAIN or EBUSY
                 PyErr_SetFromErrno(PyExc_OSError);
                 return NULL;
             }
@@ -225,9 +238,9 @@ method_sendfile(PyObject *self, PyObject *args)
 
     Py_BEGIN_ALLOW_THREADS;
     do {
-	sf_iobuf.bytes_sent = 0; /* Really needed? */
-        rc = send_file(&out_fd, &sf_iobuf, SF_DONT_CACHE);
-	sts += sf_iobuf.bytes_sent;
+	    sf_iobuf.bytes_sent = 0; /* Really needed? */
+            rc = send_file(&out_fd, &sf_iobuf, SF_DONT_CACHE);
+	    sts += sf_iobuf.bytes_sent;
     } while( rc == 1 || (rc == -1 && errno == EINTR) );
     Py_END_ALLOW_THREADS;
 

@@ -127,14 +127,9 @@ def sendfile_wrapper(sock, file, offset, nbytes, headers=[], trailers=[]):
             else:
                 return sendfile.sendfile(sock, file, offset, nbytes)
         except OSError as err:
-            if err.errno == errno.ECONNRESET:
-                # disconnected
-                raise
-            elif err.errno == errno.EAGAIN:
-                # we have to retry send data
+            if err.errno == errno.EAGAIN:  # retry
                 continue
-            else:
-                raise
+            raise
 
 
 class TestSendfile(unittest.TestCase):
