@@ -237,27 +237,19 @@ class TestSendfile(unittest.TestCase):
             self.assertEqual(hash(data), hash(expected_data))
 
         def test_trailers(self):
-            total_sent = 0
-            trailers = _bytes("x") * 512
-            sent = sendfile.sendfile(self.sockno, self.fileno, 0, 4096,
-                                             trailers=[trailers])
-            total_sent += sent
-            offset = 4096
-            nbytes = 4096
-            while 1:
-                sent = sendfile_wrapper(self.sockno, self.fileno, offset, nbytes)
-                if sent == 0:
-                    break
-                offset += sent
-                total_sent += sent
-
-            expected_data = DATA[:4096] + trailers
-            expected_data += DATA[4096:]
-            self.assertEqual(total_sent, len(expected_data))
-            self.client.close()
-            self.server.wait()
-            data = self.server.handler_instance.get_data()
-            self.assertEqual(hash(data), hash(expected_data))
+            TESTFN2 = TESTFN + "2"
+            f = open(TESTFN2, 'wb')
+            f.write(b"abcde")
+            f.close()
+            f = open(TESTFN2, 'rb')
+            try:
+                sendfile.sendfile(self.sockno, f.fileno(), 0, 4096, trailers=[b"12345"])
+                self.client.close()
+                self.server.wait()
+                data = self.server.handler_instance.get_data()
+                self.assertEqual(data, b"abcde12345")
+            finally:
+                os.remove(TESTFN2)
 
         if hasattr(sendfile, "SF_NODISKIO"):
             def test_flags(self):
@@ -267,7 +259,6 @@ class TestSendfile(unittest.TestCase):
                 except OSError as err:
                     if err.errno not in (errno.EBUSY, errno.EAGAIN):
                         raise
-
 
 def test_main():
     tests = [TestSendfile]

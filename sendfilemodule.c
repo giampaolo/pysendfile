@@ -46,7 +46,7 @@
 int unsupported = 0;
 
 /* --- begin FreeBSD / Dragonfly --- */
-#if defined(__FreeBSD__) || defined(__DragonFly__)
+#if defined(__FreeBSD__) || defined(__DragonFly__) || defined(__APPLE__)
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
@@ -59,6 +59,19 @@ PyParse_off_t(PyObject* arg, void* addr)
 #else
     *((off_t*)addr) = PyLong_Check(arg) ? PyLong_AsLongLong(arg)
 : PyLong_AsLong(arg);
+#endif
+    if (PyErr_Occurred())
+        return 0;
+    return 1;
+}
+
+static int
+_parse_off_t(PyObject* arg, void* addr)
+{
+#if !defined(HAVE_LARGEFILE_SUPPORT)
+    *((off_t*)addr) = PyLong_AsLong(arg);
+#else
+    *((off_t*)addr) = PyLong_AsLongLong(arg);
 #endif
     if (PyErr_Occurred())
         return 0;
@@ -127,22 +140,30 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     static char *keywords[] = {"out", "in", "offset", "count",
                                "headers", "trailers", "flags", NULL};
 
+#ifdef __APPLE__
+    if (!PyArg_ParseTupleAndKeywords(args, kwdict, "iiO&O&|OOi:sendfile",
+        keywords, &out, &in, _parse_off_t, &offset, _parse_off_t, &sent,
+#else
     if (!PyArg_ParseTupleAndKeywords(args, kwdict, "iiO&n|OOi:sendfile",
-        keywords, &out, &in, PyParse_off_t, &offset, &len,
-        &headers, &trailers, &flags)) {
+        keywords, &out, &in, _parse_off_t, &offset, &len,
+#endif
+                &headers, &trailers, &flags))
             return NULL;
-    }
-
     if (headers != NULL) {
         if (!PySequence_Check(headers)) {
             PyErr_SetString(PyExc_TypeError,
                 "sendfile() headers must be a sequence or None");
             return NULL;
         } else {
+            Py_ssize_t i = 0; /* Avoid uninitialized warning */
             sf.hdr_cnt = PySequence_Size(headers);
-            if (sf.hdr_cnt > 0 && !iov_setup(&(sf.headers), &hbuf,
-                    headers, sf.hdr_cnt, PyBUF_SIMPLE))
+            if (sf.hdr_cnt > 0 &&
+                !(i = iov_setup(&(sf.headers), &hbuf,
+                                headers, sf.hdr_cnt, PyBUF_SIMPLE)))
                 return NULL;
+#ifdef __APPLE__
+            sent += i;
+#endif
         }
     }
     if (trailers != NULL) {
@@ -151,15 +172,24 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
                 "sendfile() trailers must be a sequence or None");
             return NULL;
         } else {
+            Py_ssize_t i = 0; /* Avoid uninitialized warning */
             sf.trl_cnt = PySequence_Size(trailers);
-            if (sf.trl_cnt > 0 && !iov_setup(&(sf.trailers), &tbuf,
-                    trailers, sf.trl_cnt, PyBUF_SIMPLE))
+            if (sf.trl_cnt > 0 &&
+                !(i = iov_setup(&(sf.trailers), &tbuf,
+                                trailers, sf.trl_cnt, PyBUF_SIMPLE)))
                 return NULL;
+#ifdef __APPLE__
+            sent += i;
+#endif
         }
     }
 
     Py_BEGIN_ALLOW_THREADS
+#ifdef __APPLE__
+    ret = sendfile(in, out, offset, &sent, &sf, flags);
+#else
     ret = sendfile(in, out, offset, len, &sf, &sent, flags);
+#endif
     Py_END_ALLOW_THREADS
 
     if (sf.headers != NULL)
@@ -291,7 +321,7 @@ method_sendfile(PyObject *self, PyObject *args)
 }
 
 #else /* --- end Linux --- */
-int unsupported = 1;
+
 
 static PyObject *
 method_sendfile(PyObject *self, PyObject *args)
