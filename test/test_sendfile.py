@@ -115,7 +115,7 @@ class Server(asyncore.dispatcher, threading.Thread):
         raise
 
 
-def sendfile_wrapper(sock, file, offset, nbytes, headers=[], trailers=[]):
+def sendfile_wrapper(sock, file, offset, nbytes, headers="", trailers=""):
     """A higher level wrapper representing how an application is
     supposed to use sendfile().
     """
@@ -220,7 +220,7 @@ class TestSendfile(unittest.TestCase):
             total_sent = 0
             headers = _bytes("x") * 512
             sent = sendfile.sendfile(self.sockno, self.fileno, 0, 4096,
-                                     headers=[headers])
+                                     headers=headers)
             total_sent += sent
             offset = 4096
             nbytes = 4096
@@ -246,21 +246,13 @@ class TestSendfile(unittest.TestCase):
             f = open(TESTFN2, 'rb')
             try:
                 sendfile.sendfile(self.sockno, f.fileno(), 0, 4096,
-                                  trailers=[_bytes("12345")])
+                                  trailers=_bytes("12345"))
                 self.client.close()
                 self.server.wait()
                 data = self.server.handler_instance.get_data()
                 self.assertEqual(data, _bytes("abcde12345"))
             finally:
                 os.remove(TESTFN2)
-
-        def test_bad_header_trailer_type(self):
-            self.assertRaises(TypeError,
-                              sendfile_wrapper, self.sockno, self.fileno,
-                                                0, 4096, headers=[None])
-            self.assertRaises(TypeError,
-                              sendfile_wrapper, self.sockno, self.fileno,
-                                                0, 4096, trailers=[None])
 
     if hasattr(sendfile, "SF_NODISKIO"):
         def test_flags(self):

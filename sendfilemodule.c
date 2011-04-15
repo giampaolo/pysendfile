@@ -51,118 +51,45 @@ int unsupported = 0;
 #include <sys/socket.h>
 #include <sys/uio.h>
 
-static int
-_parse_off_t(PyObject* arg, void* addr)
-{
-#if !defined(HAVE_LARGEFILE_SUPPORT)
-    *((off_t*)addr) = PyLong_AsLong(arg);
-#else
-    *((off_t*)addr) = PyLong_AsLongLong(arg);
-#endif
-    if (PyErr_Occurred())
-        return 0;
-    return 1;
-}
 
 static PyObject *
 method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 {
-    int in, out, i;
-    Py_ssize_t ret;
-    Py_ssize_t len;
-    off_t offset;
-    PyObject *headers = NULL;
-    PyObject *trailers = NULL;
-    off_t sent;
-    struct sf_hdtr sf;
+    int fd;
+    int sock;
     int flags = 0;
-    sf.headers = NULL;
-    sf.trailers = NULL;
-    char *buf;
-    struct iovec *header_iovs;
-    struct iovec *trailer_iovs;
-    int header_len = 0;
-    int trailer_len = 0;
+    long o,n;
+    char * head = NULL;
+    size_t head_len = 0;
+    char * tail = NULL;
+    size_t tail_len = 0;
+    static char *keywords[] = {"out", "in", "offset", "count", "headers",
+                               "trailers", "flags", NULL};
 
-    static char *keywords[] = {"out", "in", "offset", "count",
-                               "headers", "trailers", "flags", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwdict,
+                                     "iill|s#s#i:sendfile", keywords,
+                                     &fd, &sock, &o, &n, &head, &head_len,
+                                     &tail, &tail_len, &flags))
+        return NULL;
 
-#ifdef __APPLE__
-    if (!PyArg_ParseTupleAndKeywords(args, kwdict, "iiO&O&|OOi:sendfile",
-        keywords, &out, &in, _parse_off_t, &offset, _parse_off_t, &sent,
-#else
-    if (!PyArg_ParseTupleAndKeywords(args, kwdict, "iiO&n|OOi:sendfile",
-        keywords, &out, &in, _parse_off_t, &offset, &len,
-#endif
-        &headers, &trailers, &flags))
-            return NULL;
+    off_t offset = o;
+    size_t nbytes = n;
+    off_t sent;
+    int ret;
 
-    // headers handling
-    if (headers != NULL) {
-        if (!PySequence_Check(headers)) {
-            PyErr_SetString(PyExc_TypeError,
-                            "sendfile() headers must be a sequence or None");
-            return NULL;
-        }
-        header_len = PySequence_Size(headers);
-        header_iovs = (struct iovec*)malloc(sizeof(struct iovec) * header_len);
-        for (i=0; i < header_len; i++) {
-            PyObject *string = PySequence_GetItem(headers, i);
-            if (string == NULL)
-                return NULL;
-            buf = (char *) PyString_AsString(string);
-            Py_DECREF(string);
-            if (buf == NULL)
-                return NULL;
-            header_iovs[i].iov_base = buf;
-            header_iovs[i].iov_len = PyString_GET_SIZE(string);
-        }
+    if (head || tail) {
+        struct iovec ivh = {head, head_len};
+        struct iovec ivt = {tail, tail_len};
+        struct sf_hdtr hdtr = {&ivh, 1, &ivt, 1};
+        Py_BEGIN_ALLOW_THREADS
+        ret = sendfile(sock, fd, offset, nbytes, &hdtr, &sent, flags);
+        Py_END_ALLOW_THREADS
     }
     else {
-        header_iovs = (struct iovec*) malloc(sizeof(struct iovec));
+        Py_BEGIN_ALLOW_THREADS
+        ret = sendfile(sock, fd, offset, nbytes, NULL, &sent, flags);
+        Py_END_ALLOW_THREADS
     }
-
-    // trailers handling
-    if (trailers != NULL) {
-        if (!PySequence_Check(trailers)) {
-            PyErr_SetString(PyExc_TypeError,
-                            "sendfile() trailers must be a sequence or None");
-            return NULL;
-        }
-        trailer_len = PySequence_Size(trailers);
-        trailer_iovs = (struct iovec*)malloc(sizeof(struct iovec) * trailer_len);
-        for (i=0; i < trailer_len; i++) {
-            PyObject *string = PySequence_GetItem(trailers, i);
-            if (string == NULL)
-                return NULL;
-            buf = (char *) PyString_AsString(string);
-            Py_DECREF(string);
-            if (buf == NULL)
-                return NULL;
-            trailer_iovs[i].iov_base = buf;
-            trailer_iovs[i].iov_len = PyString_GET_SIZE(string);
-            Py_DECREF(string);
-        }
-    }
-    else {
-        trailer_iovs = (struct iovec*) malloc(sizeof(struct iovec));
-    }
-
-    sf.headers = header_iovs;
-    sf.hdr_cnt = header_len;
-    sf.trailers = trailer_iovs;
-    sf.trl_cnt = trailer_len;
-
-    Py_BEGIN_ALLOW_THREADS
-#ifdef __APPLE__
-    ret = sendfile(in, out, offset, &sent, &sf, flags);
-#else
-    ret = sendfile(in, out, offset, len, &sf, &sent, flags);
-#endif
-    Py_END_ALLOW_THREADS
-
-    free(header_iovs);
-    free(trailer_iovs);
 
     if (ret < 0) {
         if ((errno == EAGAIN) || (errno == EBUSY)) {
