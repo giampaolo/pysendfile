@@ -254,27 +254,32 @@ class TestSendfile(unittest.TestCase):
             finally:
                 os.remove(TESTFN2)
 
-        if hasattr(sendfile, "SF_NODISKIO"):
-            def test_flags(self):
-                try:
-                    sendfile.sendfile(self.sockno, self.fileno, 0, 4096,
-                                      flags=sendfile.SF_NODISKIO)
-                except OSError:
-                    err = sys.exc_info()[1]
-                    if err.errno not in (errno.EBUSY, errno.EAGAIN):
-                        raise
+        def test_bad_header_trailer_type(self):
+            self.assertRaises(TypeError,
+                              sendfile_wrapper, self.sockno, self.fileno,
+                                                0, 4096, headers=[None])
+            self.assertRaises(TypeError,
+                              sendfile_wrapper, self.sockno, self.fileno,
+                                                0, 4096, trailers=[None])
+
+    if hasattr(sendfile, "SF_NODISKIO"):
+        def test_flags(self):
+            try:
+                sendfile.sendfile(self.sockno, self.fileno, 0, 4096,
+                                  flags=sendfile.SF_NODISKIO)
+            except OSError:
+                err = sys.exc_info()[1]
+                if err.errno not in (errno.EBUSY, errno.EAGAIN):
+                    raise
 
 def test_main():
-    tests = [TestSendfile]
     test_suite = unittest.TestSuite()
-    for test_class in tests:
-        test_suite.addTest(unittest.makeSuite(test_class))
+    test_suite.addTest(unittest.makeSuite(TestSendfile))
     f = open(TESTFN, "wb")
     f.write(DATA)
     f.close()
     unittest.TextTestRunner(verbosity=2).run(test_suite)
     os.remove(TESTFN)
-
 
 if __name__ == '__main__':
     test_main()

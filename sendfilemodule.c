@@ -51,20 +51,6 @@ int unsupported = 0;
 #include <sys/socket.h>
 #include <sys/uio.h>
 
-int
-PyParse_off_t(PyObject* arg, void* addr)
-{
-#if !defined(HAVE_LARGEFILE_SUPPORT)
-    *((off_t*)addr) = PyLong_AsLong(arg);
-#else
-    *((off_t*)addr) = PyLong_Check(arg) ? PyLong_AsLongLong(arg)
-: PyLong_AsLong(arg);
-#endif
-    if (PyErr_Occurred())
-        return 0;
-    return 1;
-}
-
 static int
 _parse_off_t(PyObject* arg, void* addr)
 {
@@ -78,68 +64,25 @@ _parse_off_t(PyObject* arg, void* addr)
     return 1;
 }
 
-
-static Py_ssize_t
-iov_setup(struct iovec **iov, Py_buffer **buf, PyObject *seq, int cnt, int type)
-{
-    int i, j;
-    Py_ssize_t blen, total = 0;
-
-    *iov = PyMem_New(struct iovec, cnt);
-    if (*iov == NULL) {
-        PyErr_NoMemory();
-        return total;
-    }
-    *buf = PyMem_New(Py_buffer, cnt);
-    if (*buf == NULL) {
-        PyMem_Del(*iov);
-        PyErr_NoMemory();
-        return total;
-    }
-
-    for (i = 0; i < cnt; i++) {
-        if (PyObject_GetBuffer(PySequence_GetItem(seq, i),
-                               &(*buf)[i], type) == -1) {
-            PyMem_Del(*iov);
-            for (j = 0; j < i; j++) {
-                PyBuffer_Release(&(*buf)[j]);
-            }
-            PyMem_Del(*buf);
-            return 0;
-        }
-        (*iov)[i].iov_base = (*buf)[i].buf;
-        blen = (*buf)[i].len;
-        (*iov)[i].iov_len = blen;
-        total += blen;
-    }
-    return total;
-}
-
-static void
-iov_cleanup(struct iovec *iov, Py_buffer *buf, int cnt)
-{
-    int i;
-    PyMem_Del(iov);
-    for (i = 0; i < cnt; i++) {
-        PyBuffer_Release(&buf[i]);
-    }
-    PyMem_Del(buf);
-}
-
 static PyObject *
 method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 {
-    int in, out;
+    int in, out, i;
     Py_ssize_t ret;
     Py_ssize_t len;
     off_t offset;
-    PyObject *headers = NULL, *trailers = NULL;
-    Py_buffer *hbuf, *tbuf;
+    PyObject *headers = NULL;
+    PyObject *trailers = NULL;
     off_t sent;
     struct sf_hdtr sf;
     int flags = 0;
     sf.headers = NULL;
     sf.trailers = NULL;
+    char *buf;
+    struct iovec *header_iovs;
+    struct iovec *trailer_iovs;
+    int header_len = 0;
+    int trailer_len = 0;
 
     static char *keywords[] = {"out", "in", "offset", "count",
                                "headers", "trailers", "flags", NULL};
@@ -151,42 +94,64 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     if (!PyArg_ParseTupleAndKeywords(args, kwdict, "iiO&n|OOi:sendfile",
         keywords, &out, &in, _parse_off_t, &offset, &len,
 #endif
-                &headers, &trailers, &flags))
+        &headers, &trailers, &flags))
             return NULL;
+
+    // headers handling
     if (headers != NULL) {
         if (!PySequence_Check(headers)) {
             PyErr_SetString(PyExc_TypeError,
-                "sendfile() headers must be a sequence or None");
+                            "sendfile() headers must be a sequence or None");
             return NULL;
-        } else {
-            Py_ssize_t i = 0; /* Avoid uninitialized warning */
-            sf.hdr_cnt = PySequence_Size(headers);
-            if (sf.hdr_cnt > 0 &&
-                !(i = iov_setup(&(sf.headers), &hbuf,
-                                headers, sf.hdr_cnt, PyBUF_SIMPLE)))
+        }
+        header_len = PySequence_Size(headers);
+        header_iovs = (struct iovec*)malloc(sizeof(struct iovec) * header_len);
+        for (i=0; i < header_len; i++) {
+            PyObject *string = PySequence_GetItem(headers, i);
+            if (string == NULL)
                 return NULL;
-#ifdef __APPLE__
-            sent += i;
-#endif
+            buf = (char *) PyString_AsString(string);
+            Py_DECREF(string);
+            if (buf == NULL)
+                return NULL;
+            header_iovs[i].iov_base = buf;
+            header_iovs[i].iov_len = PyString_GET_SIZE(string);
         }
     }
+    else {
+        header_iovs = (struct iovec*) malloc(sizeof(struct iovec));
+    }
+
+    // trailers handling
     if (trailers != NULL) {
         if (!PySequence_Check(trailers)) {
             PyErr_SetString(PyExc_TypeError,
-                "sendfile() trailers must be a sequence or None");
+                            "sendfile() trailers must be a sequence or None");
             return NULL;
-        } else {
-            Py_ssize_t i = 0; /* Avoid uninitialized warning */
-            sf.trl_cnt = PySequence_Size(trailers);
-            if (sf.trl_cnt > 0 &&
-                !(i = iov_setup(&(sf.trailers), &tbuf,
-                                trailers, sf.trl_cnt, PyBUF_SIMPLE)))
-                 return NULL;
-#ifdef __APPLE__
-            sent += i;
-#endif
+        }
+        trailer_len = PySequence_Size(trailers);
+        trailer_iovs = (struct iovec*)malloc(sizeof(struct iovec) * trailer_len);
+        for (i=0; i < trailer_len; i++) {
+            PyObject *string = PySequence_GetItem(trailers, i);
+            if (string == NULL)
+                return NULL;
+            buf = (char *) PyString_AsString(string);
+            Py_DECREF(string);
+            if (buf == NULL)
+                return NULL;
+            trailer_iovs[i].iov_base = buf;
+            trailer_iovs[i].iov_len = PyString_GET_SIZE(string);
+            Py_DECREF(string);
         }
     }
+    else {
+        trailer_iovs = (struct iovec*) malloc(sizeof(struct iovec));
+    }
+
+    sf.headers = header_iovs;
+    sf.hdr_cnt = header_len;
+    sf.trailers = trailer_iovs;
+    sf.trl_cnt = trailer_len;
 
     Py_BEGIN_ALLOW_THREADS
 #ifdef __APPLE__
@@ -196,10 +161,8 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 #endif
     Py_END_ALLOW_THREADS
 
-    if (sf.headers != NULL)
-        iov_cleanup(sf.headers, hbuf, sf.hdr_cnt);
-    if (sf.trailers != NULL)
-         iov_cleanup(sf.trailers, tbuf, sf.trl_cnt);
+    free(header_iovs);
+    free(trailer_iovs);
 
     if (ret < 0) {
         if ((errno == EAGAIN) || (errno == EBUSY)) {
@@ -227,7 +190,7 @@ done:
         return Py_BuildValue("L", sent);
     #endif
 }
-/* --- end FreeBSD / Dragonfly --- */
+/* --- end OSX / FreeBSD / Dragonfly --- */
 
 /* --- begin AIX --- */
 #elif defined(_AIX)
