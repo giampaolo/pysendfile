@@ -172,7 +172,7 @@ class TestSendfile(unittest.TestCase):
         data = self.server.handler_instance.get_data()
         self.assertEqual(hash(data), hash(DATA))
 
-    def test_send_at_certain_offset(self):
+    def test_send_from_certain_offset(self):
         # start sending a file at a certain offset
         total_sent = 0
         offset = int(len(DATA) / 2)
@@ -191,25 +191,6 @@ class TestSendfile(unittest.TestCase):
         expected = DATA[int(len(DATA) / 2):]
         self.assertEqual(total_sent, len(expected))
         self.assertEqual(hash(data), hash(expected))
-
-    def test_offset_overflow(self):
-        # specify an offset > file size
-        offset = len(DATA) + 4096
-        sent = sendfile.sendfile(self.sockno, self.fileno, offset, 4096)
-        self.assertEqual(sent, 0)
-        self.client.close()
-        self.server.wait()
-        data = self.server.handler_instance.get_data()
-        self.assertEqual(data, _bytes(''))
-
-    def test_invalid_offset(self):
-        try:
-            sendfile.sendfile(self.sockno, self.fileno, -1, 4096)
-        except OSError:
-            err = sys.exc_info()[1]
-            self.assertEqual(err.errno, errno.EINVAL)
-        else:
-            self.fail("exception not raised")
 
     def test_header(self):
         total_sent = 0
@@ -276,6 +257,67 @@ class TestSendfile(unittest.TestCase):
                 err = sys.exc_info()[1]
                 if err.errno not in (errno.EBUSY, errno.EAGAIN):
                     raise
+
+    # --- corner cases
+
+    def test_offset_overflow(self):
+        # specify an offset > file size
+        offset = len(DATA) + 4096
+        sent = sendfile.sendfile(self.sockno, self.fileno, offset, 4096)
+        self.assertEqual(sent, 0)
+        self.client.close()
+        self.server.wait()
+        data = self.server.handler_instance.get_data()
+        self.assertEqual(data, _bytes(''))
+
+    def test_invalid_offset(self):
+        try:
+            sendfile.sendfile(self.sockno, self.fileno, -1, 4096)
+        except OSError:
+            err = sys.exc_info()[1]
+            self.assertEqual(err.errno, errno.EINVAL)
+        else:
+            self.fail("exception not raised")
+
+    def test_small_file(self):
+        data = _bytes('foo bar')
+        f = open(TESTFN2, 'wb')
+        f.write(data)
+        f.close()
+        f = open(TESTFN2, 'rb')
+
+        sendfile_wrapper(self.sockno, f.fileno(), 0, 4096)
+        self.client.close()
+        self.server.wait()
+        data_sent = self.server.handler_instance.get_data()
+        self.assertEqual(data_sent, data)
+
+    def test_small_file_and_offset_overflow(self):
+        data = _bytes('foo bar')
+        f = open(TESTFN2, 'wb')
+        f.write(data)
+        f.close()
+        f = open(TESTFN2, 'rb')
+
+        sendfile_wrapper(self.sockno, f.fileno(), 4096, 4096)
+        self.client.close()
+        self.server.wait()
+        data_sent = self.server.handler_instance.get_data()
+        self.assertEqual(data_sent, _bytes(''))
+
+    def test_empty_file(self):
+        data = _bytes('')
+        f = open(TESTFN2, 'wb')
+        f.write(data)
+        f.close()
+        f = open(TESTFN2, 'rb')
+
+        sendfile_wrapper(self.sockno, f.fileno(), 0, 4096)
+        self.client.close()
+        self.server.wait()
+        data_sent = self.server.handler_instance.get_data()
+        self.assertEqual(data_sent, data)
+
 
 def test_main():
 
