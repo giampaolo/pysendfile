@@ -251,18 +251,24 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     if (head_len != 0 || tail_len != 0) {
         int cork = 1;
         // first, fetch the original setting
+        Py_BEGIN_ALLOW_THREADS
         ret = getsockopt(out_fd, SOL_TCP, TCP_CORK,
                          (void*)&orig_cork, &orig_cork_len);
+        Py_END_ALLOW_THREADS
         if (ret == -1)
             return PyErr_SetFromErrno(PyExc_OSError);
+        Py_BEGIN_ALLOW_THREADS
         ret = setsockopt(out_fd, SOL_TCP, TCP_CORK, (void*)&cork, sizeof(cork));
+        Py_END_ALLOW_THREADS
         if (ret == -1)
             return PyErr_SetFromErrno(PyExc_OSError);
     }
 
     // send header
     if (head_len != 0) {
+        Py_BEGIN_ALLOW_THREADS
         sent_h = send(out_fd, head, head_len, 0);
+        Py_END_ALLOW_THREADS
         if (sent_h < 0)
             return PyErr_SetFromErrno(PyExc_OSError);
         else if (sent_h == 0) {
@@ -284,7 +290,9 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 
     // send trailer
     if (tail_len != 0) {
+        Py_BEGIN_ALLOW_THREADS
         sent_t = send(out_fd, tail, tail_len, 0);
+        Py_END_ALLOW_THREADS
         if (sent_t < 0)
            return PyErr_SetFromErrno(PyExc_OSError);
         else if (sent_t == 0) {
