@@ -65,12 +65,14 @@ support.
 
 Later on Niklas Edmundsson took over maintenance and added AIX support.
 
-It has completely rewritten by Giampaolo Rodola' (g.rodola@gmail.com) who took
-over maintenance and added support for:
+It's been completely rewritten by Giampaolo Rodola' (g.rodola@gmail.com) who
+took over maintenance and added support for:
 
 - Python 3
 - OSX
 - FreeBSD flag argument
 - large files
 - Linux header/trailer support via TCP_CORK socket option
+- non-blocking sockets
+
 
