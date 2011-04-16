@@ -256,9 +256,11 @@ class TestSendfile(unittest.TestCase):
         else:
             self.fail("exception not raised")
 
-    if sys.platform.startswith('darwin') \
-    or sys.platform.startswith('freebsd'):
+    if sys.platform.startswith('freebsd'):
         def test_send_whole_file(self):
+            # On Mac OS X and FreeBSD, a value of 0 for nbytes
+            # specifies to send until EOF is reached.
+            # OSX implementation is broken though.
             ret = sendfile_wrapper(self.sockno, self.fileno, 0, 0)
             self.client.close()
             self.server.wait()
