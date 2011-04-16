@@ -89,8 +89,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 #ifdef __APPLE__
     sent = nbytes;
 #endif
-
-    if (head || tail) {
+    if (head_len != 0 || tail_len != 0) { 
         struct iovec ivh = {head, head_len};
         struct iovec ivt = {tail, tail_len};
         hdtr.headers = &ivh;
