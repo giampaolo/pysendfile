@@ -63,6 +63,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     size_t head_len = 0;
     char * tail = NULL;
     size_t tail_len = 0;
+    struct sf_hdtr hdtr;
     static char *keywords[] = {"out", "in", "offset", "count", "header",
                                "trailer", "flags", NULL};
 
@@ -83,7 +84,10 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     if (head || tail) {
         struct iovec ivh = {head, head_len};
         struct iovec ivt = {tail, tail_len};
-        struct sf_hdtr hdtr = {&ivh, 1, &ivt, 1};
+        hdtr.headers = &ivh;
+        hdtr.hdr_cnt = 1;
+        hdtr.trailers = &ivt;
+        hdtr.trl_cnt = 1;
         Py_BEGIN_ALLOW_THREADS
 #ifdef __APPLE__
         sent += head_len;
