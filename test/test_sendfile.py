@@ -256,6 +256,15 @@ class TestSendfile(unittest.TestCase):
         else:
             self.fail("exception not raised")
 
+    if sys.platform.startswith('darwin') \
+    or sys.platform.startswith('freebsd'):
+        def test_send_whole_file(self):
+            ret = sendfile_wrapper(self.sockno, self.fileno, 0, 0)
+            self.client.close()
+            self.server.wait()
+            data = self.server.handler_instance.get_data()
+            self.assertEqual(hash(data), hash(DATA))
+
     if hasattr(sendfile, "SF_NODISKIO"):
         def test_flags(self):
             try:
