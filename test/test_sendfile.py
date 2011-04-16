@@ -12,6 +12,7 @@ import asynchat
 import threading
 import errno
 import time
+import atexit
 
 import sendfile
 
@@ -23,6 +24,7 @@ def _bytes(x):
     return x
 
 TESTFN = "$testfile"
+TESTFN2 = TESTFN + "2"
 DATA = _bytes("12345abcde" * 1024 * 1024)  # 10 Mb
 HOST = '127.0.0.1'
 
@@ -143,6 +145,8 @@ class TestSendfile(unittest.TestCase):
         self.fileno = self.file.fileno()
 
     def tearDown(self):
+        if os.path.isfile(TESTFN2):
+            os.remove(TESTFN2)
         self.file.close()
         self.client.close()
         if self.server.running:
@@ -230,20 +234,27 @@ class TestSendfile(unittest.TestCase):
         self.assertEqual(hash(data), hash(expected_data))
 
     def test_trailer(self):
-        TESTFN2 = TESTFN + "2"
         f = open(TESTFN2, 'wb')
         f.write(_bytes("abcde"))
         f.close()
         f = open(TESTFN2, 'rb')
+        sendfile.sendfile(self.sockno, f.fileno(), 0, 4096,
+                          trailer=_bytes("12345"))
+        self.client.close()
+        self.server.wait()
+        data = self.server.handler_instance.get_data()
+        self.assertEqual(data, _bytes("abcde12345"))
+
+    def test_non_socket(self):
+        fd_in = open(TESTFN, 'rb')
+        fd_out = open(TESTFN2, 'wb')
         try:
-            sendfile.sendfile(self.sockno, f.fileno(), 0, 4096,
-                              trailer=_bytes("12345"))
-            self.client.close()
-            self.server.wait()
-            data = self.server.handler_instance.get_data()
-            self.assertEqual(data, _bytes("abcde12345"))
-        finally:
-            os.remove(TESTFN2)
+            sendfile.sendfile(fd_in.fileno(), fd_out.fileno(), 0, 4096)
+        except OSError:
+            err = sys.exc_info()[1]
+            self.assertEqual(err.errno, errno.EBADF)
+        else:
+            self.fail("exception not raised")
 
     if hasattr(sendfile, "SF_NODISKIO"):
         def test_flags(self):
@@ -256,13 +267,21 @@ class TestSendfile(unittest.TestCase):
                     raise
 
 def test_main():
+
+    def cleanup():
+        if os.path.isfile(TESTFN):
+            os.remove(TESTFN)
+        if os.path.isfile(TESTFN2):
+            os.remove(TESTFN2)
+
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(TestSendfile))
+    cleanup()
     f = open(TESTFN, "wb")
     f.write(DATA)
     f.close()
+    atexit.register(cleanup)
     unittest.TextTestRunner(verbosity=2).run(test_suite)
-    os.remove(TESTFN)
 
 if __name__ == '__main__':
     test_main()

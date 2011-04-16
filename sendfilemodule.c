@@ -251,38 +251,36 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     if (head || tail) {
         int cork = 1;
         // first, fetch the original setting
-        getsockopt(in_fd, SOL_TCP, TCP_CORK, (void*)&orig_cork, &orig_cork_len);
-        setsockopt(in_fd, SOL_TCP, TCP_CORK, (void*)&cork, sizeof(cork));
+        ret = getsockopt(out_fd, SOL_TCP, TCP_CORK,
+                         (void*)&orig_cork, &orig_cork_len);
+        if (ret == -1)
+            return PyErr_SetFromErrno(PyExc_OSError);
+        ret = setsockopt(out_fd, SOL_TCP, TCP_CORK, (void*)&cork, sizeof(cork));
+        if (ret == -1)
+            return PyErr_SetFromErrno(PyExc_OSError);
     }
 
     // send header
     if (head) {
         sent_h = send(out_fd, head, head_len, 0);
-        if (sent_h < 0) {
-            PyErr_SetFromErrno(PyExc_OSError);
-            return NULL;
-        }
-        else if (sent_h < head_len) {
+        if (sent_h < 0)
+            return PyErr_SetFromErrno(PyExc_OSError);
+        else if (sent_h < head_len)
             goto done;
-        }
     }
 
     // send file
     Py_BEGIN_ALLOW_THREADS;
     sent_f = sendfile(out_fd, in_fd, &offset, count);
     Py_END_ALLOW_THREADS;
-    if (sent_f == -1) {
-        PyErr_SetFromErrno(PyExc_OSError);
-        return NULL;
-    }
+    if (sent_f == -1)
+        return PyErr_SetFromErrno(PyExc_OSError);
 
     // send trailer
     if (tail) {
         sent_t = send(out_fd, tail, tail_len, 0);
-        if (sent_t < 0) {
-	        PyErr_SetFromErrno(PyExc_OSError);
-	        return NULL;
-        }
+        if (sent_t < 0)
+           return PyErr_SetFromErrno(PyExc_OSError);
     }
 
     goto done;
