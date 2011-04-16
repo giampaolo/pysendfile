@@ -25,7 +25,6 @@ def _bytes(x):
 TESTFN = "$testfile"
 DATA = _bytes("12345abcde" * 1024 * 1024)  # 10 Mb
 HOST = '127.0.0.1'
-SUPPORT_HEADER_TRAILER = not sys.platform.startswith("linux")
 
 
 class Handler(asynchat.async_chat):
@@ -121,11 +120,7 @@ def sendfile_wrapper(sock, file, offset, nbytes, header="", trailer=""):
     """
     while 1:
         try:
-            if SUPPORT_HEADER_TRAILER:
-                return sendfile.sendfile(sock, file, offset, nbytes,
-                                                     header, trailer)
-            else:
-                return sendfile.sendfile(sock, file, offset, nbytes)
+            return sendfile.sendfile(sock, file, offset, nbytes,header, trailer)
         except OSError:
             err = sys.exc_info()[1]
             if err.errno == errno.EAGAIN:  # retry
@@ -212,47 +207,43 @@ class TestSendfile(unittest.TestCase):
         else:
             self.fail("exception not raised")
 
-    # --- header / trailer tests
-
-    if SUPPORT_HEADER_TRAILER:
-
-        def test_header(self):
-            total_sent = 0
-            header = _bytes("x") * 512
-            sent = sendfile.sendfile(self.sockno, self.fileno, 0, 4096,
-                                     header=header)
+    def test_header(self):
+        total_sent = 0
+        header = _bytes("x") * 512
+        sent = sendfile.sendfile(self.sockno, self.fileno, 0, 4096,
+                                 header=header)
+        total_sent += sent
+        offset = 4096
+        nbytes = 4096
+        while 1:
+            sent = sendfile_wrapper(self.sockno, self.fileno, offset, nbytes)
+            if sent == 0:
+                break
+            offset += sent
             total_sent += sent
-            offset = 4096
-            nbytes = 4096
-            while 1:
-                sent = sendfile_wrapper(self.sockno, self.fileno, offset, nbytes)
-                if sent == 0:
-                    break
-                offset += sent
-                total_sent += sent
 
-            expected_data = header + DATA
-            self.assertEqual(total_sent, len(expected_data))
+        expected_data = header + DATA
+        self.assertEqual(total_sent, len(expected_data))
+        self.client.close()
+        self.server.wait()
+        data = self.server.handler_instance.get_data()
+        self.assertEqual(hash(data), hash(expected_data))
+
+    def test_trailer(self):
+        TESTFN2 = TESTFN + "2"
+        f = open(TESTFN2, 'wb')
+        f.write(_bytes("abcde"))
+        f.close()
+        f = open(TESTFN2, 'rb')
+        try:
+            sendfile.sendfile(self.sockno, f.fileno(), 0, 4096,
+                              trailer=_bytes("12345"))
             self.client.close()
             self.server.wait()
             data = self.server.handler_instance.get_data()
-            self.assertEqual(hash(data), hash(expected_data))
-
-        def test_trailer(self):
-            TESTFN2 = TESTFN + "2"
-            f = open(TESTFN2, 'wb')
-            f.write(_bytes("abcde"))
-            f.close()
-            f = open(TESTFN2, 'rb')
-            try:
-                sendfile.sendfile(self.sockno, f.fileno(), 0, 4096,
-                                  trailer=_bytes("12345"))
-                self.client.close()
-                self.server.wait()
-                data = self.server.handler_instance.get_data()
-                self.assertEqual(data, _bytes("abcde12345"))
-            finally:
-                os.remove(TESTFN2)
+            self.assertEqual(data, _bytes("abcde12345"))
+        finally:
+            os.remove(TESTFN2)
 
     if hasattr(sendfile, "SF_NODISKIO"):
         def test_flags(self):

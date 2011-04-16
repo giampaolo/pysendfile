@@ -28,6 +28,7 @@ FreeBSD
 Dragon Fly BSD
 AIX (non properly tested)
 
+Python versions from 2.4 to 3.2 by using a single code base.
 
 =================================
     Example usage
@@ -59,12 +60,17 @@ while 1:
     Authors
 =================================
 
-py-sendfile was originally written by Ben Woolley including Linux, FreeBSD
-and Dragonfly BSD support.
+py-sendfile was originally written by Ben Woolley including Linux and FreeBSD
+support.
 
-Later on Niklas Edmundsson took over maintenance.
+Later on Niklas Edmundsson took over maintenance and added AIX support.
 
-It has almost completely rewritten by Giampaolo Rodola' (g.rodola@gmail.com)
-adding support for OSX, FreeBSD constants, Python 3 and who is now maintaining
-the module.
+It has completely rewritten by Giampaolo Rodola' (g.rodola@gmail.com) who took
+over maintenance and added support for:
+
+- Python 3
+- OSX
+- FreeBSD flag argument
+- large files
+- Linux header/trailer support via TCP_CORK socket option
 

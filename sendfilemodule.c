@@ -213,29 +213,85 @@ method_sendfile(PyObject *self, PyObject *args)
 
 #elif defined (__linux__)
 #include <sys/sendfile.h>
+#include <sys/socket.h>
+
+// these are taken from linux/socket.h, for some reason including
+// that file doesn't work here.
+#define SOL_TCP 6
+#define TCP_CORK 3
 
 static PyObject *
-method_sendfile(PyObject *self, PyObject *args)
+method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 {
     int out_fd, in_fd;
     off_t offset;
     size_t count;
-    ssize_t sent;
+    char * head = NULL;
+    size_t head_len = 0;
+    char * tail = NULL;
+    size_t tail_len = 0;
+    int orig_cork = 1;
+    int orig_cork_len = sizeof(int);
+    int flags;
+    int ret;
+    ssize_t sent_h = 0;
+    ssize_t sent_f = 0;
+    ssize_t sent_t = 0;
 
-    if (!PyArg_ParseTuple(args, "iiLk", &out_fd, &in_fd, &offset, &count))
+    static char *keywords[] = {"out", "in", "offset", "count", "header",
+                               "trailer", "flags", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwdict,
+                                     "iiLK|s#s#i:sendfile", keywords,
+                                     &out_fd, &in_fd, &offset, &count,
+                                     &head, &head_len,
+                                     &tail, &tail_len, &flags))
         return NULL;
 
+    if (head || tail) {
+        int cork = 1;
+        // first, fetch the original setting
+        getsockopt(in_fd, SOL_TCP, TCP_CORK, (void*)&orig_cork, &orig_cork_len);
+        setsockopt(in_fd, SOL_TCP, TCP_CORK, (void*)&cork, sizeof(cork));
+    }
+
+    // send header
+    if (head) {
+        sent_h = send(out_fd, head, head_len, 0);
+        if (sent_h < 0) {
+            PyErr_SetFromErrno(PyExc_OSError);
+            return NULL;
+        }
+        else if (sent_h < head_len) {
+            goto done;
+        }
+    }
+
+    // send file
     Py_BEGIN_ALLOW_THREADS;
-    sent = sendfile(out_fd, in_fd, &offset, count);
+    sent_f = sendfile(out_fd, in_fd, &offset, count);
     Py_END_ALLOW_THREADS;
-    if (sent == -1) {
+    if (sent_f == -1) {
         PyErr_SetFromErrno(PyExc_OSError);
         return NULL;
     }
+
+    // send trailer
+    if (tail) {
+        sent_t = send(out_fd, tail, tail_len, 0);
+        if (sent_t < 0) {
+	        PyErr_SetFromErrno(PyExc_OSError);
+	        return NULL;
+        }
+    }
+
+    goto done;
+
+done:
 #if !defined(HAVE_LARGEFILE_SUPPORT)
-    return Py_BuildValue("l", sent);
+    return Py_BuildValue("l", sent_h + sent_f + sent_t);
 #else
-    return Py_BuildValue("L", sent);
+    return Py_BuildValue("L", sent_h + sent_f + sent_t);
 #endif
 }
 

@@ -9,10 +9,11 @@ Version 2.0.0 - XXXX-XX-XX
 #2: python 3 support
 #3: FreeBSD implementation is broken
 #4: python large file support
-#5: headers/trailers are now keyword arguments
+#5: header/trailer are now keyword arguments
 #6: exposed SF_NODISKIO, SF_MNOWAIT and SF_SYNC constants on FreeBSD
 #8: benchmark script
 #10: OSX support
+#11: Linux header and trailer support via TCP_CORK socket option
 
 Version 1.2.4 - 2009-03-06
 ==========================
