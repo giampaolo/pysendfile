@@ -51,6 +51,15 @@ int unsupported = 0;
 #include <sys/socket.h>
 #include <sys/uio.h>
 
+// needed on OSX - Python < 2.6
+#if defined(__APPLE__) && defined(_POSIX_C_SOURCE)
+struct sf_hdtr {
+    struct iovec *headers;
+    int hdr_cnt;
+    struct iovec *trailers;
+    int trl_cnt;
+};
+#endif
 
 static PyObject *
 method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
