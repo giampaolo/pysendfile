@@ -76,18 +76,30 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     size_t nbytes = n;
     off_t sent;
     int ret;
+#ifdef __APPLE__
+    sent = nbytes;
+#endif
 
     if (head || tail) {
         struct iovec ivh = {head, head_len};
         struct iovec ivt = {tail, tail_len};
         struct sf_hdtr hdtr = {&ivh, 1, &ivt, 1};
         Py_BEGIN_ALLOW_THREADS
+#ifdef __APPLE__
+        sent += head_len;
+        ret = sendfile(sock, fd, offset, &sent, &hdtr, flags);
+#else
         ret = sendfile(sock, fd, offset, nbytes, &hdtr, &sent, flags);
+#endif
         Py_END_ALLOW_THREADS
     }
     else {
         Py_BEGIN_ALLOW_THREADS
+#ifdef __APPLE__
+        ret = sendfile(sock, fd, offset, &sent, NULL, flags);
+#else
         ret = sendfile(sock, fd, offset, nbytes, NULL, &sent, flags);
+#endif
         Py_END_ALLOW_THREADS
     }
 
