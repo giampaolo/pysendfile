@@ -63,8 +63,8 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     size_t head_len = 0;
     char * tail = NULL;
     size_t tail_len = 0;
-    static char *keywords[] = {"out", "in", "offset", "count", "headers",
-                               "trailers", "flags", NULL};
+    static char *keywords[] = {"out", "in", "offset", "count", "header",
+                               "trailer", "flags", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwdict,
                                      "iill|s#s#i:sendfile", keywords,
@@ -245,7 +245,7 @@ SendfileMethods[] =
 {
     {"sendfile",  method_sendfile,  METH_VARARGS | METH_KEYWORDS,
 "sendfile(out, in, offset, nbytes)\n"
-"sendfile(out, in, offset, nbytes, headers=None, trailers=None, flags=0)\n"
+"sendfile(out, in, offset, nbytes, header=None, trailer=None, flags=0)\n"
 "\n"
 "Copy *nbytes* bytes from file descriptor *in* to file descriptor *out*\n"
 "starting from *offset* and return the number of bytes sent.\n"
@@ -256,8 +256,8 @@ SendfileMethods[] =
 "current position of *in* and the position of *in* is updated. It returns\n"
 "the same as above with offset being `None`.\n"
 "\n"
-"The second case may be used on Mac OS X and FreeBSD where *headers* and\n"
-"*trailers* are arbitrary sequences of buffers that are written before and\n"
+"The second case may be used on Mac OS X and FreeBSD where *header* and\n"
+"*trailer* are arbitrary sequences of buffers that are written before and\n"
 "after the data from *in* is written. It returns the same as the first case.\n"
 "\n"
 "On Mac OS X and FreeBSD, a value of 0 for *nbytes* specifies to send until\n"

@@ -25,7 +25,7 @@ def _bytes(x):
 TESTFN = "$testfile"
 DATA = _bytes("12345abcde" * 1024 * 1024)  # 10 Mb
 HOST = '127.0.0.1'
-SUPPORT_HEADERS_TRAILERS = not sys.platform.startswith("linux")
+SUPPORT_HEADER_TRAILER = not sys.platform.startswith("linux")
 
 
 class Handler(asynchat.async_chat):
@@ -115,15 +115,15 @@ class Server(asyncore.dispatcher, threading.Thread):
         raise
 
 
-def sendfile_wrapper(sock, file, offset, nbytes, headers="", trailers=""):
+def sendfile_wrapper(sock, file, offset, nbytes, header="", trailer=""):
     """A higher level wrapper representing how an application is
     supposed to use sendfile().
     """
     while 1:
         try:
-            if SUPPORT_HEADERS_TRAILERS:
+            if SUPPORT_HEADER_TRAILER:
                 return sendfile.sendfile(sock, file, offset, nbytes,
-                                                     headers, trailers)
+                                                     header, trailer)
             else:
                 return sendfile.sendfile(sock, file, offset, nbytes)
         except OSError:
@@ -212,15 +212,15 @@ class TestSendfile(unittest.TestCase):
         else:
             self.fail("exception not raised")
 
-    # --- headers / trailers tests
+    # --- header / trailer tests
 
-    if SUPPORT_HEADERS_TRAILERS:
+    if SUPPORT_HEADER_TRAILER:
 
-        def test_headers(self):
+        def test_header(self):
             total_sent = 0
-            headers = _bytes("x") * 512
+            header = _bytes("x") * 512
             sent = sendfile.sendfile(self.sockno, self.fileno, 0, 4096,
-                                     headers=headers)
+                                     header=header)
             total_sent += sent
             offset = 4096
             nbytes = 4096
@@ -231,14 +231,14 @@ class TestSendfile(unittest.TestCase):
                 offset += sent
                 total_sent += sent
 
-            expected_data = headers + DATA
+            expected_data = header + DATA
             self.assertEqual(total_sent, len(expected_data))
             self.client.close()
             self.server.wait()
             data = self.server.handler_instance.get_data()
             self.assertEqual(hash(data), hash(expected_data))
 
-        def test_trailers(self):
+        def test_trailer(self):
             TESTFN2 = TESTFN + "2"
             f = open(TESTFN2, 'wb')
             f.write(_bytes("abcde"))
@@ -246,7 +246,7 @@ class TestSendfile(unittest.TestCase):
             f = open(TESTFN2, 'rb')
             try:
                 sendfile.sendfile(self.sockno, f.fileno(), 0, 4096,
-                                  trailers=_bytes("12345"))
+                                  trailer=_bytes("12345"))
                 self.client.close()
                 self.server.wait()
                 data = self.server.handler_instance.get_data()
