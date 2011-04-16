@@ -248,7 +248,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
                                      &tail, &tail_len, &flags))
         return NULL;
 
-    if (head || tail) {
+    if (head_len != 0 || tail_len != 0) {
         int cork = 1;
         // first, fetch the original setting
         ret = getsockopt(out_fd, SOL_TCP, TCP_CORK,
@@ -261,10 +261,16 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     }
 
     // send header
-    if (head) {
+    if (head_len != 0) {
         sent_h = send(out_fd, head, head_len, 0);
         if (sent_h < 0)
             return PyErr_SetFromErrno(PyExc_OSError);
+        else if (sent_h == 0) {
+            // A return value of 0 is supposed to be interpreted as EOF
+            // being reached. We do not want that and raise EAGAIN instead.
+            errno = EAGAIN;
+            return PyErr_SetFromErrno(PyExc_OSError);
+        }
         else if (sent_h < head_len)
             goto done;
     }
@@ -277,10 +283,16 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
         return PyErr_SetFromErrno(PyExc_OSError);
 
     // send trailer
-    if (tail) {
+    if (tail_len != 0) {
         sent_t = send(out_fd, tail, tail_len, 0);
         if (sent_t < 0)
            return PyErr_SetFromErrno(PyExc_OSError);
+        else if (sent_t == 0) {
+            // A return value of 0 is supposed to be interpreted as EOF
+            // being reached. We do not want that and raise EAGAIN instead.
+            errno = EAGAIN;
+            return PyErr_SetFromErrno(PyExc_OSError);
+        }
     }
 
     goto done;
