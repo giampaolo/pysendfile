@@ -385,12 +385,12 @@ class TestLargeFile(unittest.TestCase):
         # synchronize by waiting for "220 ready" response
         self.client.recv(1024)
         self.sockno = self.client.fileno()
-        sys.stdout.write("\ncreating file:")
+        sys.stdout.write("\ncreating file:\n")
         sys.stdout.flush()
         self.create_file()
         self.file = open(TESTFN2, 'rb')
         self.fileno = self.file.fileno()
-        sys.stdout.write("\starting transfer:")
+        sys.stdout.write("\starting transfer:\n")
         sys.stdout.flush()
 
     def tearDown(self):
