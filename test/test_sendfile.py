@@ -13,6 +13,7 @@ import threading
 import errno
 import time
 import atexit
+import warnings
 
 import sendfile
 
@@ -27,6 +28,7 @@ TESTFN = "$testfile"
 TESTFN2 = TESTFN + "2"
 DATA = _bytes("12345abcde" * 1024 * 1024)  # 10 Mb
 HOST = '127.0.0.1'
+BIGFILE_SIZE = 2500000000  # > 2GB file (2GB = 2147483648 bytes)
 if "sunos" not in sys.platform:
     SUPPORT_HEADER_TRAILER = True
 else:
@@ -57,6 +59,22 @@ class Handler(asynchat.async_chat):
 
     def handle_error(self):
         raise
+
+
+class NoMemoryHandler(Handler):
+    # same as above but doesn't store received data in memory
+    ac_in_buffer_size = 65536
+
+    def __init__(self, conn):
+        Handler.__init__(self, conn)
+        self.in_buffer_len = 0
+
+    def handle_read(self):
+        data = self.recv(self.ac_in_buffer_size)
+        self.in_buffer_len += len(data)
+
+    def get_data(self):
+        raise NotImplementedError
 
 
 class Server(asyncore.dispatcher, threading.Thread):
@@ -338,6 +356,109 @@ class TestSendfile(unittest.TestCase):
         self.assertEqual(data_sent, data)
 
 
+class RepeatedTimer:
+
+    def __init__(self, timeout, fun):
+        self.timeout = timeout
+        self.fun = fun
+
+    def start(self):
+        def main():
+            self.fun()
+            self.start()
+        self.timer = threading.Timer(1, main)
+        self.timer.start()
+
+    def stop(self):
+        self.timer.cancel()
+
+
+class TestLargeFile(unittest.TestCase):
+
+    def setUp(self):
+        self.server = Server((HOST, 0))
+        self.server.handler = NoMemoryHandler
+        self.server.start()
+        self.client = socket.socket()
+        self.client.connect((self.server.host, self.server.port))
+        self.client.settimeout(1)
+        # synchronize by waiting for "220 ready" response
+        self.client.recv(1024)
+        self.sockno = self.client.fileno()
+        print "\ncreating file:"
+        self.create_file()
+        self.file = open(TESTFN2, 'rb')
+        self.fileno = self.file.fileno()
+        print "\nstarting transfer:"
+
+    def tearDown(self):
+        if os.path.isfile(TESTFN2):
+            os.remove(TESTFN2)
+        if hasattr(self, 'file'):
+            self.file.close()
+        self.client.close()
+        if self.server.running:
+            self.server.stop()
+
+    def print_percent(self, a, b):
+        percent = ((a * 100) / b)
+        sys.stdout.write("\r%2d%%" % percent)
+        sys.stdout.flush()
+
+    def create_file(self):
+        f = open(TESTFN2, 'wb')
+        chunk_len = 65536
+        chunk = _bytes('x' * chunk_len)
+        total = 0
+        timer = RepeatedTimer(1, lambda: self.print_percent(total, BIGFILE_SIZE))
+        timer.start()
+        try:
+            while 1:
+                f.write(chunk)
+                total += chunk_len
+                if total >= BIGFILE_SIZE:
+                    break
+        except:
+            self.tearDown()
+            raise
+        finally:
+            f.close()
+            timer.stop()
+
+    def test_big_file(self):
+        total_sent = 0
+        offset = 0
+        nbytes = 65536
+        file_size = os.path.getsize(TESTFN2)
+        timer = RepeatedTimer(1, lambda: self.print_percent(total_sent,
+                                                            file_size))
+        timer.start()
+        try:
+            while 1:
+                sent = sendfile_wrapper(self.sockno, self.fileno, offset, nbytes)
+                if sent == 0:
+                    break
+                total_sent += sent
+                offset += sent
+                self.assertTrue(sent <= nbytes)
+                self.assertEqual(offset, total_sent)
+        except:
+            print
+            raise
+        finally:
+            print
+            timer.stop()
+
+        self.assertEqual(total_sent, file_size)
+        self.client.close()
+        if "sunos" in sys.platform:
+            time.sleep(.1)
+        self.server.wait()
+        data_len = self.server.handler_instance.in_buffer_len
+        file_size = os.path.getsize(TESTFN2)
+        self.assertEqual(file_size, data_len)
+
+
 def test_main():
 
     def cleanup():
@@ -346,8 +467,28 @@ def test_main():
         if os.path.isfile(TESTFN2):
             os.remove(TESTFN2)
 
+    def has_large_file_support():
+        # taken from Python's Lib/test/test_largefile.py
+        f = open(TESTFN, 'wb', buffering=0)
+        try:
+            f.seek(BIGFILE_SIZE)
+            # seeking is not enough of a test: you must write and flush too
+            f.write(_bytes('x'))
+            f.flush()
+        except (IOError, OverflowError):
+            f.close()
+            return False
+        else:
+            f.close()
+            return True
+
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(TestSendfile))
+    if has_large_file_support():
+        test_suite.addTest(unittest.makeSuite(TestLargeFile))
+    else:
+        atexit.register(warnings.warn, "couldn't run large file test because "
+                  "filesystem does not have largefile support.", RuntimeWarning)
     cleanup()
     f = open(TESTFN, "wb")
     f.write(DATA)
