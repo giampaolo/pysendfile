@@ -26,6 +26,7 @@ def _bytes(x):
 
 TESTFN = "$testfile"
 TESTFN2 = TESTFN + "2"
+TESTFN3 = TESTFN + "3"
 DATA = _bytes("12345abcde" * 1024 * 1024)  # 10 Mb
 HOST = '127.0.0.1'
 BIGFILE_SIZE = 2500000000  # > 2GB file (2GB = 2147483648 bytes)
@@ -388,14 +389,14 @@ class TestLargeFile(unittest.TestCase):
         sys.stdout.write("\ncreating file:\n")
         sys.stdout.flush()
         self.create_file()
-        self.file = open(TESTFN2, 'rb')
+        self.file = open(TESTFN3, 'rb')
         self.fileno = self.file.fileno()
         sys.stdout.write("\starting transfer:\n")
         sys.stdout.flush()
 
     def tearDown(self):
-        if os.path.isfile(TESTFN2):
-            os.remove(TESTFN2)
+        #if os.path.isfile(TESTFN3):
+        #    os.remove(TESTFN3)
         if hasattr(self, 'file'):
             self.file.close()
         self.client.close()
@@ -408,7 +409,10 @@ class TestLargeFile(unittest.TestCase):
         sys.stdout.flush()
 
     def create_file(self):
-        f = open(TESTFN2, 'wb')
+        # XXX - temporary
+        if os.path.isfile(TESTFN3):
+            return
+        f = open(TESTFN3, 'wb')
         chunk_len = 65536
         chunk = _bytes('x' * chunk_len)
         total = 0
@@ -431,7 +435,7 @@ class TestLargeFile(unittest.TestCase):
         total_sent = 0
         offset = 0
         nbytes = 65536
-        file_size = os.path.getsize(TESTFN2)
+        file_size = os.path.getsize(TESTFN3)
         timer = RepeatedTimer(1, lambda: self.print_percent(total_sent,
                                                             file_size))
         timer.start()
@@ -454,10 +458,10 @@ class TestLargeFile(unittest.TestCase):
         self.assertEqual(total_sent, file_size)
         self.client.close()
         if "sunos" in sys.platform:
-            time.sleep(.1)
+            time.sleep(1)
         self.server.wait()
         data_len = self.server.handler_instance.in_buffer_len
-        file_size = os.path.getsize(TESTFN2)
+        file_size = os.path.getsize(TESTFN3)
         self.assertEqual(file_size, data_len)
 
 

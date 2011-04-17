@@ -325,8 +325,15 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     size_t nbytes;
     ssize_t sent;
 
-    if (!PyArg_ParseTuple(args, "iill", &out_fd, &in_fd, &offset, &nbytes))
+    if (!PyArg_ParseTuple(args, 
+#if defined(HAVE_LARGEFILE_SUPPORT)
+                          "iiLL",
+#else
+                          "iill",
+#endif
+                           &out_fd, &in_fd, &offset, &nbytes)) {
         return NULL;
+    }    
     sent = sendfile(out_fd, in_fd, &offset, nbytes);
     if (sent == -1)
         return PyErr_SetFromErrno(PyExc_OSError);
