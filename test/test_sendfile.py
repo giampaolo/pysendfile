@@ -391,7 +391,7 @@ class TestLargeFile(unittest.TestCase):
         self.create_file()
         self.file = open(TESTFN3, 'rb')
         self.fileno = self.file.fileno()
-        sys.stdout.write("\starting transfer:\n")
+        sys.stdout.write("\nstarting transfer:\n")
         sys.stdout.flush()
 
     def tearDown(self):

@@ -135,10 +135,10 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     goto done;
 
 done:
-    #if !defined(HAVE_LARGEFILE_SUPPORT)
-        return Py_BuildValue("l", sent);
-    #else
+    #if defined(HAVE_LARGEFILE_SUPPORT)
         return Py_BuildValue("L", sent);
+    #else
+        return Py_BuildValue("l", sent);
     #endif
 }
 /* --- end OSX / FreeBSD / Dragonfly --- */
@@ -199,10 +199,10 @@ method_sendfile(PyObject *self, PyObject *args)
         return NULL;
     }
     else {
-    #if !defined(HAVE_LARGEFILE_SUPPORT)
-        return Py_BuildValue("l", sts);
-    #else
+    #if defined(HAVE_LARGEFILE_SUPPORT)
         return Py_BuildValue("L", sts);
+    #else
+        return Py_BuildValue("l", sts);
     #endif
     }
 }
@@ -240,11 +240,16 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
                                "trailer", "flags", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwdict,
-                                     "iiLK|s#s#i:sendfile", keywords,
-                                     &out_fd, &in_fd, &offset, &count,
-                                     &head, &head_len,
-                                     &tail, &tail_len, &flags))
+#if defined(HAVE_LARGEFILE_SUPPORT)
+                                     "iiLL|s#s#i:sendfile",
+#else
+                                     "iill|s#s#i:sendfile",
+#endif
+                                     keywords, &out_fd, &in_fd, &offset,
+                                     &count, &head, &head_len, &tail,
+                                     &tail_len, &flags)) {
         return NULL;
+    }
 
     if (head_len != 0 || tail_len != 0) {
         int cork = 1;
@@ -304,10 +309,10 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     goto done;
 
 done:
-#if !defined(HAVE_LARGEFILE_SUPPORT)
-    return Py_BuildValue("l", sent_h + sent_f + sent_t);
-#else
+#if defined(HAVE_LARGEFILE_SUPPORT)
     return Py_BuildValue("L", sent_h + sent_f + sent_t);
+#else
+    return Py_BuildValue("l", sent_h + sent_f + sent_t);
 #endif
 }
 /* --- end Linux --- */
@@ -325,7 +330,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     size_t nbytes;
     ssize_t sent;
 
-    if (!PyArg_ParseTuple(args, 
+    if (!PyArg_ParseTuple(args,
 #if defined(HAVE_LARGEFILE_SUPPORT)
                           "iiLL",
 #else
@@ -333,7 +338,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 #endif
                            &out_fd, &in_fd, &offset, &nbytes)) {
         return NULL;
-    }    
+    }
     sent = sendfile(out_fd, in_fd, &offset, nbytes);
     if (sent == -1)
         return PyErr_SetFromErrno(PyExc_OSError);
