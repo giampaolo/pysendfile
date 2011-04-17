@@ -26,6 +26,7 @@ Linux
 OSX
 FreeBSD
 Dragon Fly BSD
+SunOS
 AIX (non properly tested)
 
 Python versions from 2.4 to 3.2 by using a single code base.
@@ -70,9 +71,9 @@ took over maintenance and added support for:
 
 - Python 3
 - OSX
+- SunOS
 - FreeBSD flag argument
 - large files
 - Linux header/trailer support via TCP_CORK socket option
 - non-blocking sockets
-
 

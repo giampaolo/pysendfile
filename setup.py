@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 # $Id$
 
+import sys
 from distutils.core import setup, Extension
+
+if 'sunos' in sys.platform:
+    libraries = ["sendfile"]
+else:
+    libraries = []
 
 def main():
     setup(name = 'py-sendfile',
@@ -32,7 +38,8 @@ def main():
                                           'Public License (LGPL)',
                ],
           ext_modules = [Extension('sendfile',
-                                   sources=['sendfilemodule.c'])],
+                                   sources=['sendfilemodule.c'],
+                                   libraries=libraries)],
           )
 
 if __name__ == '__main__':

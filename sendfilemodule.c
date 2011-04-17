@@ -45,7 +45,7 @@
 
 int unsupported = 0;
 
-/* --- begin FreeBSD / Dragonfly --- */
+/* --- begin FreeBSD / Dragonfly / OSX --- */
 #if defined(__FreeBSD__) || defined(__DragonFly__) || defined(__APPLE__)
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -89,7 +89,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 #ifdef __APPLE__
     sent = nbytes;
 #endif
-    if (head_len != 0 || tail_len != 0) { 
+    if (head_len != 0 || tail_len != 0) {
         struct iovec ivh = {head, head_len};
         struct iovec ivt = {tail, tail_len};
         hdtr.headers = &ivh;
@@ -209,7 +209,6 @@ method_sendfile(PyObject *self, PyObject *args)
 /* --- end AIX --- */
 
 /* --- start Linux --- */
-
 #elif defined (__linux__)
 #include <sys/sendfile.h>
 #include <sys/socket.h>
@@ -311,19 +310,40 @@ done:
     return Py_BuildValue("L", sent_h + sent_f + sent_t);
 #endif
 }
+/* --- end Linux --- */
 
-#else /* --- end Linux --- */
+/* --- begin SUN OS --- */
+#elif defined(__sun)
+#include <sys/sendfile.h>
 
+static PyObject *
+method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
+{
+    int out_fd;
+    int in_fd;
+    off_t offset;
+    size_t nbytes;
+    ssize_t sent;
 
+    if (!PyArg_ParseTuple(args, "iill", &out_fd, &in_fd, &offset, &nbytes))
+        return NULL;
+    sent = sendfile(out_fd, in_fd, &offset, nbytes);
+    if (sent == -1)
+        return PyErr_SetFromErrno(PyExc_OSError);
+    return Py_BuildValue("i", sent);
+}
+#else
+/* --- end SUN OS --- */
+
+/* --- being not supported --- */
 static PyObject *
 method_sendfile(PyObject *self, PyObject *args)
 {
     PyErr_SetString(PyExc_NotImplementedError, "platform not supported");
-    Py_INCREF(Py_None);
-    return Py_None;
+    return NULL;
 }
 #endif
-
+/* --- end not supported --- */
 
 
 static PyMethodDef
