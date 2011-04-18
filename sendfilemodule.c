@@ -80,7 +80,11 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
                                "trailer", "flags", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwdict,
-                                     "iiLk|s#s#i:sendfile",
+#if defined(HAVE_LARGEFILE_SUPPORT)
+                                     "iiLl|s#s#i:sendfile",
+#else
+                                     "iill|s#s#i:sendfile",
+#endif
                                      keywords, &fd, &sock, &offset, &nbytes,
                                      &head, &head_len, &tail, &tail_len,
                                      &flags)) {
@@ -241,7 +245,11 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
                                "trailer", "flags", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwdict,
-                                     "iiLk|s#s#i:sendfile",
+#if defined(HAVE_LARGEFILE_SUPPORT)
+                                     "iiLL|s#s#i:sendfile",
+#else
+                                     "iill|s#s#i:sendfile",
+#endif
                                      keywords, &out_fd, &in_fd, &offset,
                                      &nbytes, &head, &head_len, &tail,
                                      &tail_len, &flags)) {
@@ -328,8 +336,12 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     ssize_t sent;
 
     if (!PyArg_ParseTuple(args,
-                          "iiLk",
-                          &out_fd, &in_fd, &offset, &nbytes)) {
+#if defined(HAVE_LARGEFILE_SUPPORT)
+                          "iiLL",
+#else
+                          "iill",
+#endif
+                           &out_fd, &in_fd, &offset, &nbytes)) {
         return NULL;
     }
     sent = sendfile(out_fd, in_fd, &offset, nbytes);
