@@ -43,6 +43,20 @@
 #include <Python.h>
 #include <stdlib.h>
 
+static int
+_parse_off_t(PyObject* arg, void* addr)
+{
+#if !defined(HAVE_LARGEFILE_SUPPORT)
+    *((off_t*)addr) = PyLong_AsLong(arg);
+#else
+    *((off_t*)addr) = PyLong_AsLongLong(arg);
+#endif
+    if (PyErr_Occurred())
+        return 0;
+    return 1;
+}
+
+
 int unsupported = 0;
 
 /* --- begin FreeBSD / Dragonfly / OSX --- */
@@ -68,11 +82,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     int sock;
     int flags = 0;
     int ret;
-#if defined(HAVE_LARGEFILE_SUPPORT)
     off_t offset;
-#else
-    long offset;
-#endif
     size_t nbytes;
     char * head = NULL;
     size_t head_len = 0;
@@ -80,20 +90,20 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     size_t tail_len = 0;
     off_t sent;
     struct sf_hdtr hdtr;
+    PyObject *offobj;
     static char *keywords[] = {"out", "in", "offset", "nbytes", "header",
                                "trailer", "flags", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwdict,
-#if defined(HAVE_LARGEFILE_SUPPORT)
-                                     "iiLI|s#s#i:sendfile",
-#else
-                                     "iilI|s#s#i:sendfile",
-#endif
-                                     keywords, &fd, &sock, &offset, &nbytes,
+                                     "iiOI|s#s#i:sendfile",
+                                     keywords, &fd, &sock, &offobj, &nbytes,
                                      &head, &head_len, &tail, &tail_len,
                                      &flags)) {
         return NULL;
     }
+
+    if (!_parse_off_t(offobj, &offset))
+        return NULL;
 
 #ifdef __APPLE__
     sent = nbytes;
@@ -231,11 +241,7 @@ static PyObject *
 method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 {
     int out_fd, in_fd;
-#if defined(HAVE_LARGEFILE_SUPPORT)
     off_t offset;
-#else
-    long offset;
-#endif
     size_t nbytes;
     char * head = NULL;
     size_t head_len = 0;
@@ -248,21 +254,20 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     ssize_t sent_h = 0;
     ssize_t sent_f = 0;
     ssize_t sent_t = 0;
+    PyObject *offobj;
 
     static char *keywords[] = {"out", "in", "offset", "nbytes", "header",
                                "trailer", "flags", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwdict,
-#if defined(HAVE_LARGEFILE_SUPPORT)defined(HAVE_LARGEFILE_SUPPORT)
-                                     "iiLI|s#s#i:sendfile",
-#else
-                                     "iilI|s#s#i:sendfile",
-#endif
-                                     keywords, &out_fd, &in_fd, &offset,
+                                     "iiOI|s#s#i:sendfile",
+                                     keywords, &out_fd, &in_fd, &offobj,
                                      &nbytes, &head, &head_len, &tail,
                                      &tail_len, &flags)) {
         return NULL;
     }
+    if (!_parse_off_t(offobj, &offset))
+        return NULL;
 
     if (head_len != 0 || tail_len != 0) {
         int cork = 1;
@@ -342,16 +347,15 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     off_t offset;
     size_t nbytes;
     ssize_t sent;
+    PyObject *offobj;
 
     if (!PyArg_ParseTuple(args,
-#if !defined(HAVE_LARGEFILE_SUPPORT)
-                          "iiLI",
-#else
-                          "iilI",
-#endif
-                           &out_fd, &in_fd, &offset, &nbytes)) {
+                          "iiOI",
+                           &out_fd, &in_fd, &offobj, &nbytes)) {
         return NULL;
     }
+    if (!_parse_off_t(offobj, &offset))
+        return NULL;
     sent = sendfile(out_fd, in_fd, &offset, nbytes);
     if (sent == -1)
         return PyErr_SetFromErrno(PyExc_OSError);

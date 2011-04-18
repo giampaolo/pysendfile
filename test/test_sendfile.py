@@ -455,7 +455,8 @@ class TestLargeFile(unittest.TestCase):
                 print
                 raise
         finally:
-            print
+            sys.stdout.write("\n")
+            sys.stdout.flush()
             timer.stop()
 
         self.assertEqual(total_sent, file_size)
