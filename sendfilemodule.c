@@ -231,7 +231,11 @@ static PyObject *
 method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 {
     int out_fd, in_fd;
+#if defined(HAVE_LARGEFILE_SUPPORT)
     off_t offset;
+#else
+    long offset;
+#endif
     size_t nbytes;
     char * head = NULL;
     size_t head_len = 0;
@@ -249,10 +253,10 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
                                "trailer", "flags", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwdict,
-#if defined(HAVE_LARGEFILE_SUPPORT)
-                                     "iiLL|s#s#i:sendfile",
+#if defined(HAVE_LARGEFILE_SUPPORT)defined(HAVE_LARGEFILE_SUPPORT)
+                                     "iiLI|s#s#i:sendfile",
 #else
-                                     "iill|s#s#i:sendfile",
+                                     "iilI|s#s#i:sendfile",
 #endif
                                      keywords, &out_fd, &in_fd, &offset,
                                      &nbytes, &head, &head_len, &tail,
