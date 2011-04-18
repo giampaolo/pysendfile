@@ -67,25 +67,30 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     int fd;
     int sock;
     int flags = 0;
-    long o,n;
+    int ret;
+    off_t offset;
+    size_t nbytes;
     char * head = NULL;
     size_t head_len = 0;
     char * tail = NULL;
     size_t tail_len = 0;
+    off_t sent;
     struct sf_hdtr hdtr;
-    static char *keywords[] = {"out", "in", "offset", "count", "header",
+    static char *keywords[] = {"out", "in", "offset", "nbytes", "header",
                                "trailer", "flags", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwdict,
-                                     "iill|s#s#i:sendfile", keywords,
-                                     &fd, &sock, &o, &n, &head, &head_len,
-                                     &tail, &tail_len, &flags))
+#if defined(HAVE_LARGEFILE_SUPPORT)
+                                     "iiLl|s#s#i:sendfile",
+#else
+                                     "iill|s#s#i:sendfile",
+#endif
+                                     keywords, &fd, &sock, &offset, &nbytes,
+                                     &head, &head_len, &tail, &tail_len,
+                                     &flags)) {
         return NULL;
+    }
 
-    off_t offset = o;
-    size_t nbytes = n;
-    off_t sent;
-    int ret;
 #ifdef __APPLE__
     sent = nbytes;
 #endif
@@ -152,7 +157,7 @@ method_sendfile(PyObject *self, PyObject *args)
 {
     int out_fd, in_fd;
     off_t offset;
-    size_t count;
+    size_t nbytes;
     char *hdr=NULL, *trail=NULL;
     int hdrsize, trailsize;
     ssize_t sts=0;
@@ -160,7 +165,7 @@ method_sendfile(PyObject *self, PyObject *args)
     int rc;
 
     if (!PyArg_ParseTuple(args, "iiLk|s#s#",
-                          &out_fd, &in_fd, &offset, &count, &hdr, &hdrsize,
+                          &out_fd, &in_fd, &offset, &nbytes, &hdr, &hdrsize,
 			  &trail, &trailsize))
         return NULL;
 
@@ -182,7 +187,7 @@ method_sendfile(PyObject *self, PyObject *args)
     }
     sf_iobuf.file_descriptor = in_fd;
     sf_iobuf.file_offset = offset;
-    sf_iobuf.file_bytes = count;
+    sf_iobuf.file_bytes = nbytes;
 
     Py_BEGIN_ALLOW_THREADS;
     do {
@@ -223,7 +228,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 {
     int out_fd, in_fd;
     off_t offset;
-    size_t count;
+    size_t nbytes;
     char * head = NULL;
     size_t head_len = 0;
     char * tail = NULL;
@@ -236,7 +241,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     ssize_t sent_f = 0;
     ssize_t sent_t = 0;
 
-    static char *keywords[] = {"out", "in", "offset", "count", "header",
+    static char *keywords[] = {"out", "in", "offset", "nbytes", "header",
                                "trailer", "flags", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwdict,
@@ -246,7 +251,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
                                      "iill|s#s#i:sendfile",
 #endif
                                      keywords, &out_fd, &in_fd, &offset,
-                                     &count, &head, &head_len, &tail,
+                                     &nbytes, &head, &head_len, &tail,
                                      &tail_len, &flags)) {
         return NULL;
     }
@@ -286,7 +291,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 
     // send file
     Py_BEGIN_ALLOW_THREADS;
-    sent_f = sendfile(out_fd, in_fd, &offset, count);
+    sent_f = sendfile(out_fd, in_fd, &offset, nbytes);
     Py_END_ALLOW_THREADS;
     if (sent_f == -1)
         return PyErr_SetFromErrno(PyExc_OSError);
