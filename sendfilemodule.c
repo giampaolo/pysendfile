@@ -80,11 +80,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
                                "trailer", "flags", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwdict,
-#if defined(HAVE_LARGEFILE_SUPPORT)
                                      "iiLl|s#s#i:sendfile",
-#else
-                                     "iill|s#s#i:sendfile",
-#endif
                                      keywords, &fd, &sock, &offset, &nbytes,
                                      &head, &head_len, &tail, &tail_len,
                                      &flags)) {
