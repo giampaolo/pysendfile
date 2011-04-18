@@ -419,14 +419,15 @@ class TestLargeFile(unittest.TestCase):
         timer = RepeatedTimer(1, lambda: self.print_percent(total, BIGFILE_SIZE))
         timer.start()
         try:
-            while 1:
-                f.write(chunk)
-                total += chunk_len
-                if total >= BIGFILE_SIZE:
-                    break
-        except:
-            self.tearDown()
-            raise
+            try:
+                while 1:
+                    f.write(chunk)
+                    total += chunk_len
+                    if total >= BIGFILE_SIZE:
+                        break
+            except:
+                self.tearDown()
+                raise
         finally:
             f.close()
             timer.stop()
@@ -440,17 +441,19 @@ class TestLargeFile(unittest.TestCase):
                                                             file_size))
         timer.start()
         try:
-            while 1:
-                sent = sendfile_wrapper(self.sockno, self.fileno, offset, nbytes)
-                if sent == 0:
-                    break
-                total_sent += sent
-                offset += sent
-                self.assertTrue(sent <= nbytes)
-                self.assertEqual(offset, total_sent)
-        except:
-            print
-            raise
+            try:
+                while 1:
+                    sent = sendfile_wrapper(self.sockno, self.fileno, offset,
+                                            nbytes)
+                    if sent == 0:
+                        break
+                    total_sent += sent
+                    offset += sent
+                    self.assertTrue(sent <= nbytes)
+                    self.assertEqual(offset, total_sent)
+            except:
+                print
+                raise
         finally:
             print
             timer.stop()

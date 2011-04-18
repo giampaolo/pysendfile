@@ -261,7 +261,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
         // first, fetch the original setting
         Py_BEGIN_ALLOW_THREADS
         ret = getsockopt(out_fd, SOL_TCP, TCP_CORK,
-                         (void*)&orig_cork, &orig_cork_len);
+                         (void*)&orig_cork, (socklen_t*)&orig_cork_len);
         Py_END_ALLOW_THREADS
         if (ret == -1)
             return PyErr_SetFromErrno(PyExc_OSError);
@@ -366,30 +366,16 @@ method_sendfile(PyObject *self, PyObject *args)
 static PyMethodDef
 SendfileMethods[] =
 {
-    {"sendfile",  method_sendfile,  METH_VARARGS | METH_KEYWORDS,
-"sendfile(out, in, offset, nbytes)\n"
-"sendfile(out, in, offset, nbytes, header=None, trailer=None, flags=0)\n"
-"\n"
-"Copy *nbytes* bytes from file descriptor *in* to file descriptor *out*\n"
-"starting from *offset* and return the number of bytes sent.\n"
-"\n"
-"The first function notation is supported by all platforms.\n"
-"\n"
-"On Linux, if *offset* is given as `None`, the bytes are read from the\n"
-"current position of *in* and the position of *in* is updated. It returns\n"
-"the same as above with offset being `None`.\n"
-"\n"
-"The second case may be used on Mac OS X and FreeBSD where *header* and\n"
-"*trailer* are arbitrary sequences of buffers that are written before and\n"
-"after the data from *in* is written. It returns the same as the first case.\n"
-"\n"
-"On Mac OS X and FreeBSD, a value of 0 for *nbytes* specifies to send until\n"
-"the end of *in* is reached.\n"
-"\n"
-"On Solaris, *out* may be the file descriptor of a regular file or the file\n"
-"descriptor of a socket. On all other platforms, *out* must be the file\n"
+    {"sendfile", method_sendfile,  METH_VARARGS | METH_KEYWORDS,
+"sendfile(out, in, offset, nbytes, header=None, trailer=None, flags=0)\n\n"
+"Return the number of bytes just being sent. When the end of file is reached "
+"return 0.\n"
+"headers and trailers are strings that are written before and after the data "
+"from in is written\n."
+"On Solaris, out may be the file descriptor of a regular file or the file "
+"descriptor of a socket. On all other platforms, out must be the file "
 "descriptor of an open socket.\n"
-"\n"
+"flags argument is only supported on FreeBSD."
     },
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
@@ -402,7 +388,6 @@ struct module_state {
 #define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
 #else
 #define GETSTATE(m) (&_state)
-static struct module_state _state;
 #endif
 
 #if PY_MAJOR_VERSION >= 3
