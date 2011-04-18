@@ -68,7 +68,11 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     int sock;
     int flags = 0;
     int ret;
+#if defined(HAVE_LARGEFILE_SUPPORT)
     off_t offset;
+#else
+    long offset;
+#endif
     size_t nbytes;
     char * head = NULL;
     size_t head_len = 0;
@@ -81,9 +85,9 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 
     if (!PyArg_ParseTupleAndKeywords(args, kwdict,
 #if defined(HAVE_LARGEFILE_SUPPORT)
-                                     "iiLl|s#s#i:sendfile",
+                                     "iiLI|s#s#i:sendfile",
 #else
-                                     "iill|s#s#i:sendfile",
+                                     "iilI|s#s#i:sendfile",
 #endif
                                      keywords, &fd, &sock, &offset, &nbytes,
                                      &head, &head_len, &tail, &tail_len,
