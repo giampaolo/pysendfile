@@ -344,10 +344,10 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     ssize_t sent;
 
     if (!PyArg_ParseTuple(args,
-#if defined(HAVE_LARGEFILE_SUPPORT)
-                          "iiLL",
+#if !defined(HAVE_LARGEFILE_SUPPORT)
+                          "iiLI",
 #else
-                          "iill",
+                          "iilI",
 #endif
                            &out_fd, &in_fd, &offset, &nbytes)) {
         return NULL;
