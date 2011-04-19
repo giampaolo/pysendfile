@@ -358,7 +358,8 @@ class TestSendfile(unittest.TestCase):
 
     if "linux" in sys.platform:
         def test_offset_none(self):
-            # on Linux offset == None is supposed to update file offset
+            # on Linux offset == None sendfile() call is supposed
+            # to update the file offset
             while 1:
                 sent = sendfile_wrapper(self.sockno, self.fileno, None, 4096)
                 if sent == 0:
