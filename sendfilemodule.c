@@ -266,8 +266,6 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
                                      &tail_len, &flags)) {
         return NULL;
     }
-    if (!_parse_off_t(offobj, &offset))
-        return NULL;
 
     if (head_len != 0 || tail_len != 0) {
         int cork = 1;
@@ -303,9 +301,19 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     }
 
     // send file
-    Py_BEGIN_ALLOW_THREADS;
-    sent_f = sendfile(out_fd, in_fd, &offset, nbytes);
-    Py_END_ALLOW_THREADS;
+    if (offobj == Py_None) {
+        Py_BEGIN_ALLOW_THREADS;
+        sent_f = sendfile(out_fd, in_fd, NULL, nbytes);
+        Py_END_ALLOW_THREADS;
+    }
+    else {
+        if (!_parse_off_t(offobj, &offset))
+            return NULL;
+        Py_BEGIN_ALLOW_THREADS;
+        sent_f = sendfile(out_fd, in_fd, &offset, nbytes);
+        Py_END_ALLOW_THREADS;
+    }
+
     if (sent_f == -1)
         return PyErr_SetFromErrno(PyExc_OSError);
 
@@ -327,11 +335,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     goto done;
 
 done:
-#if defined(HAVE_LARGEFILE_SUPPORT)
-    return Py_BuildValue("L", sent_h + sent_f + sent_t);
-#else
-    return Py_BuildValue("l", sent_h + sent_f + sent_t);
-#endif
+    return Py_BuildValue("I", sent_h + sent_f + sent_t);
 }
 /* --- end Linux --- */
 

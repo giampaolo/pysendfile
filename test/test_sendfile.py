@@ -356,6 +356,19 @@ class TestSendfile(unittest.TestCase):
         data_sent = self.server.handler_instance.get_data()
         self.assertEqual(data_sent, data)
 
+    if "linux" in sys.platform:
+        def test_offset_none(self):
+            # on Linux offset == None is supposed to update file offset
+            while 1:
+                sent = sendfile_wrapper(self.sockno, self.fileno, None, 4096)
+                if sent == 0:
+                    break
+            self.client.close()
+            self.server.wait()
+            data = self.server.handler_instance.get_data()
+            self.assertEqual(hash(data), hash(DATA))
+
+
 
 class RepeatedTimer:
 
