@@ -363,7 +363,8 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     sent = sendfile(out_fd, in_fd, &offset, nbytes);
     if (sent == -1)
         return PyErr_SetFromErrno(PyExc_OSError);
-    return Py_BuildValue("i", sent);
+    // http://www.barcodeschool.com/2010/04/ssize_t-type-problem/
+    return Py_BuildValue("l", sent);
 }
 #else
 /* --- end SUN OS --- */
