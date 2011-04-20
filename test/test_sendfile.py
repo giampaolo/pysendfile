@@ -254,8 +254,11 @@ class TestSendfile(unittest.TestCase):
             f.write(_bytes("abcde"))
             f.close()
             f = open(TESTFN2, 'rb')
-            sendfile.sendfile(self.sockno, f.fileno(), 0, 4096,
-                              trailer=_bytes("12345"))
+            while 1:
+                sent = sendfile.sendfile(self.sockno, f.fileno(), 0, 4096,
+                                        trailer=_bytes("12345"))
+                if sent == 0:
+                    break
             self.client.close()
             self.server.wait()
             data = self.server.handler_instance.get_data()
@@ -322,7 +325,10 @@ class TestSendfile(unittest.TestCase):
         f.close()
         f = open(TESTFN2, 'rb')
 
-        sendfile_wrapper(self.sockno, f.fileno(), 0, 4096)
+        while 1:
+            sent = sendfile_wrapper(self.sockno, f.fileno(), 0, 4096)
+            if sent == 0:
+                break
         self.client.close()
         if "sunos" in sys.platform:
             time.sleep(.1)
