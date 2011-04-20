@@ -335,7 +335,11 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     goto done;
 
 done:
-    return Py_BuildValue("I", sent_h + sent_f + sent_t);
+#if PY_MAJOR_VERSION >= 3 || (PY_MAJOR_VERSION >= 2 && PY_MINOR_VERSION >= 5)
+    return Py_BuildValue("n", sent_h + sent_f + sent_t);
+#else
+    return Py_BuildValue("l", (long)sent_h + (long)sent_f + (long)sent_t);
+#endif
 }
 /* --- end Linux --- */
 
@@ -363,8 +367,11 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     sent = sendfile(out_fd, in_fd, &offset, nbytes);
     if (sent == -1)
         return PyErr_SetFromErrno(PyExc_OSError);
-    // http://www.barcodeschool.com/2010/04/ssize_t-type-problem/
-    return Py_BuildValue("l", sent);
+#if PY_MAJOR_VERSION >= 3 || (PY_MAJOR_VERSION >= 2 && PY_MINOR_VERSION >= 5)
+    return Py_BuildValue("n", sent);
+#else
+    return Py_BuildValue("l", (long)sent);
+#endif
 }
 #else
 /* --- end SUN OS --- */
