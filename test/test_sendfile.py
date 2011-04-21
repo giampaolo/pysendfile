@@ -256,6 +256,7 @@ class TestSendfile(unittest.TestCase):
             f = open(TESTFN2, 'rb')
             sent = sendfile.sendfile(self.sockno, f.fileno(), 0, 4096,
                                      trailer=_bytes("12345"))
+            time.sleep(.1)
             self.client.close()
             self.server.wait()
             data = self.server.handler_instance.get_data()
@@ -321,7 +322,7 @@ class TestSendfile(unittest.TestCase):
         f.write(data)
         f.close()
         f = open(TESTFN2, 'rb')
-    
+
         offset = 0
         while 1:
             sent = sendfile_wrapper(self.sockno, f.fileno(), offset, 4096)
@@ -329,8 +330,7 @@ class TestSendfile(unittest.TestCase):
                 break
             offset += sent
         self.client.close()
-        if "sunos" in sys.platform:
-            time.sleep(.1)
+        time.sleep(.1)
         self.server.wait()
         data_sent = self.server.handler_instance.get_data()
         self.assertEqual(data_sent, data)
