@@ -20,6 +20,7 @@ def main():
               'Operating System :: POSIX :: Linux',
               'Operating System :: MacOS :: MacOS X',
               'Operating System :: POSIX :: BSD :: FreeBSD',
+              'Operating System :: POSIX :: SunOS/Solaris',
               'Operating System :: POSIX :: AIX',
               'Programming Language :: C',
               'Programming Language :: Python :: 2.4',

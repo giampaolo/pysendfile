@@ -247,7 +247,6 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     size_t tail_len = 0;
     int orig_cork = 1;
     int orig_cork_len = sizeof(int);
-    int flags;
     int ret;
     ssize_t sent_h = 0;
     ssize_t sent_f = 0;
@@ -255,13 +254,13 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     PyObject *offobj;
 
     static char *keywords[] = {"out", "in", "offset", "nbytes", "header",
-                               "trailer", "flags", NULL};
+                               "trailer", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwdict,
-                                     "iiOI|s#s#i:sendfile",
+                                     "iiOI|s#s#:sendfile",
                                      keywords, &out_fd, &in_fd, &offobj,
                                      &nbytes, &head, &head_len, &tail,
-                                     &tail_len, &flags)) {
+                                     &tail_len)) {
         return NULL;
     }
 
@@ -397,7 +396,7 @@ SendfileMethods[] =
 "On Solaris, out may be the file descriptor of a regular file or the file "
 "descriptor of a socket. On all other platforms, out must be the file "
 "descriptor of an open socket.\n"
-"flags argument is only supported on FreeBSD."
+"flags argument is only supported on FreeBSD (see man sendfile)."
     },
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
