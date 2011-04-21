@@ -46,7 +46,7 @@ def main():
     try:
         sendfile.sendfile(0, 0, 0, 0)
     except NotImplementedError:
-        raise NotImplementedError("platorm not supported")
+        raise NotImplementedError("platorm %r not supported" % sys.platform)
     except:
         pass
 
