@@ -41,10 +41,16 @@ def main():
                                    sources=['sendfilemodule.c'],
                                    libraries=libraries)],
           )
+    # check for NotImplementedError exception if platform is not supported
+    import sendfile
+    try:
+        sendfile.sendfile(0, 0, 0, 0)
+    except NotImplementedError:
+        raise NotImplementedError("platorm not supported")
+    except:
+        pass
+
 
 if __name__ == '__main__':
     main()
-    # this will cause NotImplementedError to be raised if platform
-    # is not supported
-    import sendfile
 

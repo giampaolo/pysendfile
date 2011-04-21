@@ -57,8 +57,6 @@ _parse_off_t(PyObject* arg, void* addr)
 }
 
 
-int unsupported = 0;
-
 /* --- begin FreeBSD / Dragonfly / OSX --- */
 #if defined(__FreeBSD__) || defined(__DragonFly__) || defined(__APPLE__)
 #include <sys/types.h>
@@ -469,10 +467,6 @@ void initsendfile(void)
 
     if (module == NULL) {
         INITERROR;
-    }
-
-    if (unsupported == 1) {
-        PyErr_SetString(PyExc_NotImplementedError, "platform not supported");
     }
 
 #if PY_MAJOR_VERSION >= 3
