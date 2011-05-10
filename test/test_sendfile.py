@@ -414,8 +414,8 @@ class TestLargeFile(unittest.TestCase):
         sys.stdout.flush()
 
     def tearDown(self):
-        #if os.path.isfile(TESTFN3):
-        #    os.remove(TESTFN3)
+        if os.path.isfile(TESTFN3):
+            os.remove(TESTFN3)
         if hasattr(self, 'file'):
             self.file.close()
         self.client.close()
@@ -514,7 +514,7 @@ def test_main():
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(TestSendfile))
     if has_large_file_support():
-#        test_suite.addTest(unittest.makeSuite(TestLargeFile))
+        test_suite.addTest(unittest.makeSuite(TestLargeFile))
         pass
     else:
         atexit.register(warnings.warn, "couldn't run large file test because "
