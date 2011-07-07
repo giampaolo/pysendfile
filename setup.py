@@ -2,7 +2,10 @@
 # $Id$
 
 import sys
-from distutils.core import setup, Extension
+try:
+    from setuptools import setup, Extension
+except ImportError:
+    from distutils.core import setup, Extension
 
 if 'sunos' in sys.platform:
     libraries = ["sendfile"]
@@ -31,6 +34,7 @@ def main():
               'Programming Language :: Python :: 3.0',
               'Programming Language :: Python :: 3.1',
               'Programming Language :: Python :: 3.2',
+              'Programming Language :: Python :: 3.3',
               'Topic :: System :: Networking',
               'Topic :: System :: Operating System',
               'Topic :: Internet :: File Transfer Protocol (FTP)',
