@@ -3,6 +3,8 @@
 # $Id$
 #
 
+from __future__ import with_statement
+
 import unittest
 import os
 import sys
@@ -35,6 +37,11 @@ if "sunos" in sys.platform or "linux" in sys.platform:
 else:
     SUPPORT_HEADER_TRAILER = True
 
+def safe_remove(file):
+    try:
+        os.remove(file)
+    except OSError:
+        pass
 
 class Handler(asynchat.async_chat):
 
@@ -175,8 +182,7 @@ class TestSendfile(unittest.TestCase):
         self.fileno = self.file.fileno()
 
     def tearDown(self):
-        if os.path.isfile(TESTFN2):
-            os.remove(TESTFN2)
+        safe_remove(TESTFN2)
         self.file.close()
         self.client.close()
         if self.server.running:
@@ -250,17 +256,16 @@ class TestSendfile(unittest.TestCase):
             self.assertEqual(hash(data), hash(expected_data))
 
         def test_trailer(self):
-            f = open(TESTFN2, 'wb')
-            f.write(_bytes("abcde"))
-            f.close()
-            f = open(TESTFN2, 'rb')
-            sent = sendfile.sendfile(self.sockno, f.fileno(), 0, 4096,
-                                     trailer=_bytes("12345"))
-            time.sleep(.1)
-            self.client.close()
-            self.server.wait()
-            data = self.server.handler_instance.get_data()
-            self.assertEqual(data, _bytes("abcde12345"))
+            with open(TESTFN2, 'wb') as f:
+                f.write(_bytes("abcde"))
+            with open(TESTFN2, 'rb') as f:
+                sent = sendfile.sendfile(self.sockno, f.fileno(), 0, 4096,
+                                         trailer=_bytes("12345"))
+                time.sleep(.1)
+                self.client.close()
+                self.server.wait()
+                data = self.server.handler_instance.get_data()
+                self.assertEqual(data, _bytes("abcde12345"))
 
     def test_non_socket(self):
         fd_in = open(TESTFN, 'rb')
@@ -272,6 +277,9 @@ class TestSendfile(unittest.TestCase):
             self.assertEqual(err.errno, errno.EBADF)
         else:
             self.fail("exception not raised")
+        finally:
+            fd_in.close()
+            fd_out.close()
 
     if sys.platform.startswith('freebsd'):
         def test_send_whole_file(self):
@@ -318,48 +326,42 @@ class TestSendfile(unittest.TestCase):
 
     def test_small_file(self):
         data = _bytes('foo bar')
-        f = open(TESTFN2, 'wb')
-        f.write(data)
-        f.close()
-        f = open(TESTFN2, 'rb')
-
-        offset = 0
-        while 1:
-            sent = sendfile_wrapper(self.sockno, f.fileno(), offset, 4096)
-            if sent == 0:
-                break
-            offset += sent
-        self.client.close()
-        time.sleep(.1)
-        self.server.wait()
-        data_sent = self.server.handler_instance.get_data()
-        self.assertEqual(data_sent, data)
+        with open(TESTFN2, 'wb') as f:
+            f.write(data)
+        with open(TESTFN2, 'rb') as f:
+            offset = 0
+            while 1:
+                sent = sendfile_wrapper(self.sockno, f.fileno(), offset, 4096)
+                if sent == 0:
+                    break
+                offset += sent
+            self.client.close()
+            time.sleep(.1)
+            self.server.wait()
+            data_sent = self.server.handler_instance.get_data()
+            self.assertEqual(data_sent, data)
 
     def test_small_file_and_offset_overflow(self):
         data = _bytes('foo bar')
-        f = open(TESTFN2, 'wb')
-        f.write(data)
-        f.close()
-        f = open(TESTFN2, 'rb')
-
-        sendfile_wrapper(self.sockno, f.fileno(), 4096, 4096)
-        self.client.close()
-        self.server.wait()
-        data_sent = self.server.handler_instance.get_data()
-        self.assertEqual(data_sent, _bytes(''))
+        with open(TESTFN2, 'wb') as f:
+            f.write(data)
+        with open(TESTFN2, 'rb') as f:
+            sendfile_wrapper(self.sockno, f.fileno(), 4096, 4096)
+            self.client.close()
+            self.server.wait()
+            data_sent = self.server.handler_instance.get_data()
+            self.assertEqual(data_sent, _bytes(''))
 
     def test_empty_file(self):
         data = _bytes('')
-        f = open(TESTFN2, 'wb')
-        f.write(data)
-        f.close()
-        f = open(TESTFN2, 'rb')
-
-        sendfile_wrapper(self.sockno, f.fileno(), 0, 4096)
-        self.client.close()
-        self.server.wait()
-        data_sent = self.server.handler_instance.get_data()
-        self.assertEqual(data_sent, data)
+        with open(TESTFN2, 'wb') as f:
+            f.write(data)
+        with open(TESTFN2, 'rb') as f:
+            sendfile_wrapper(self.sockno, f.fileno(), 0, 4096)
+            self.client.close()
+            self.server.wait()
+            data_sent = self.server.handler_instance.get_data()
+            self.assertEqual(data_sent, data)
 
     if "linux" in sys.platform:
         def test_offset_none(self):
@@ -414,8 +416,6 @@ class TestLargeFile(unittest.TestCase):
         sys.stdout.flush()
 
     def tearDown(self):
-        if os.path.isfile(TESTFN3):
-            os.remove(TESTFN3)
         if hasattr(self, 'file'):
             self.file.close()
         self.client.close()
@@ -428,8 +428,7 @@ class TestLargeFile(unittest.TestCase):
         sys.stdout.flush()
 
     def create_file(self):
-        # XXX - temporary
-        if os.path.isfile(TESTFN3):
+        if os.path.isfile(TESTFN3) and os.path.getsize(TESTFN3) >= BIGFILE_SIZE:
             return
         f = open(TESTFN3, 'wb')
         chunk_len = 65536
@@ -491,10 +490,11 @@ class TestLargeFile(unittest.TestCase):
 def test_main():
 
     def cleanup():
-        if os.path.isfile(TESTFN):
-            os.remove(TESTFN)
-        if os.path.isfile(TESTFN2):
-            os.remove(TESTFN2)
+        safe_remove(TESTFN)
+        safe_remove(TESTFN2)
+        safe_remove(TESTFN3)
+
+    atexit.register(cleanup)
 
     def has_large_file_support():
         # taken from Python's Lib/test/test_largefile.py
@@ -520,10 +520,8 @@ def test_main():
         atexit.register(warnings.warn, "couldn't run large file test because "
                   "filesystem does not have largefile support.", RuntimeWarning)
     cleanup()
-    f = open(TESTFN, "wb")
-    f.write(DATA)
-    f.close()
-    atexit.register(cleanup)
+    with open(TESTFN, "wb") as f:
+        f.write(DATA)
     unittest.TextTestRunner(verbosity=2).run(test_suite)
 
 if __name__ == '__main__':
