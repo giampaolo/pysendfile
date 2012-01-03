@@ -235,107 +235,40 @@ method_sendfile(PyObject *self, PyObject *args)
 #define SOL_TCP 6
 #define TCP_CORK 3
 
+
 static PyObject *
 method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 {
     int out_fd, in_fd;
     off_t offset;
     size_t nbytes;
-    char * head = NULL;
-    size_t head_len = 0;
-    char * tail = NULL;
-    size_t tail_len = 0;
-    int orig_cork = 1;
-    int orig_cork_len = sizeof(int);
-    int ret;
-    ssize_t sent_h = 0;
-    ssize_t sent_f = 0;
-    ssize_t sent_t = 0;
+    ssize_t sent = 0;
     PyObject *offobj;
 
-    static char *keywords[] = {"out", "in", "offset", "nbytes", "header",
-                               "trailer", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwdict,
-                                     "iiOI|s#s#:sendfile",
-                                     keywords, &out_fd, &in_fd, &offobj,
-                                     &nbytes, &head, &head_len, &tail,
-                                     &tail_len)) {
+    if (!PyArg_ParseTuple(args, "iiOI", &out_fd, &in_fd, &offobj, &nbytes)) {
         return NULL;
     }
 
-    if (head_len != 0 || tail_len != 0) {
-        int cork = 1;
-        // first, fetch the original setting
-        Py_BEGIN_ALLOW_THREADS
-        ret = getsockopt(out_fd, SOL_TCP, TCP_CORK,
-                         (void*)&orig_cork, (socklen_t*)&orig_cork_len);
-        Py_END_ALLOW_THREADS
-        if (ret == -1)
-            return PyErr_SetFromErrno(PyExc_OSError);
-        Py_BEGIN_ALLOW_THREADS
-        ret = setsockopt(out_fd, SOL_TCP, TCP_CORK, (void*)&cork, sizeof(cork));
-        Py_END_ALLOW_THREADS
-        if (ret == -1)
-            return PyErr_SetFromErrno(PyExc_OSError);
-    }
-
-    // send header
-    if (head_len != 0) {
-        Py_BEGIN_ALLOW_THREADS
-        sent_h = send(out_fd, head, head_len, 0);
-        Py_END_ALLOW_THREADS
-        if (sent_h < 0)
-            return PyErr_SetFromErrno(PyExc_OSError);
-        else if (sent_h == 0) {
-            // A return value of 0 is supposed to be interpreted as EOF
-            // being reached. We do not want that and raise EAGAIN instead.
-            errno = EAGAIN;
-            return PyErr_SetFromErrno(PyExc_OSError);
-        }
-        else if (sent_h < head_len)
-            goto done;
-    }
-
-    // send file
     if (offobj == Py_None) {
         Py_BEGIN_ALLOW_THREADS;
-        sent_f = sendfile(out_fd, in_fd, NULL, nbytes);
+        sent = sendfile(out_fd, in_fd, NULL, nbytes);
         Py_END_ALLOW_THREADS;
     }
     else {
         if (!_parse_off_t(offobj, &offset))
             return NULL;
         Py_BEGIN_ALLOW_THREADS;
-        sent_f = sendfile(out_fd, in_fd, &offset, nbytes);
+        sent = sendfile(out_fd, in_fd, &offset, nbytes);
         Py_END_ALLOW_THREADS;
     }
 
-    if (sent_f == -1)
+    if (sent == -1)
         return PyErr_SetFromErrno(PyExc_OSError);
 
-    // send trailer
-    if (tail_len != 0) {
-        Py_BEGIN_ALLOW_THREADS
-        sent_t = send(out_fd, tail, tail_len, 0);
-        Py_END_ALLOW_THREADS
-        if (sent_t < 0)
-           return PyErr_SetFromErrno(PyExc_OSError);
-        else if (sent_t == 0) {
-            // A return value of 0 is supposed to be interpreted as EOF
-            // being reached. We do not want that and raise EAGAIN instead.
-            errno = EAGAIN;
-            return PyErr_SetFromErrno(PyExc_OSError);
-        }
-    }
-
-    goto done;
-
-done:
 #if PY_MAJOR_VERSION >= 3 || (PY_MAJOR_VERSION >= 2 && PY_MINOR_VERSION >= 5)
-    return Py_BuildValue("n", sent_h + sent_f + sent_t);
+    return Py_BuildValue("n", sent);
 #else
-    return Py_BuildValue("l", (long)sent_h + (long)sent_f + (long)sent_t);
+    return Py_BuildValue("l", (long)sent);
 #endif
 }
 /* --- end Linux --- */
@@ -472,4 +405,3 @@ void initsendfile(void)
     return module;
 #endif
 }
-

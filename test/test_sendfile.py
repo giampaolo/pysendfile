@@ -30,10 +30,10 @@ TESTFN3 = TESTFN + "3"
 DATA = _bytes("12345abcde" * 1024 * 1024)  # 10 Mb
 HOST = '127.0.0.1'
 BIGFILE_SIZE = 2500000000  # > 2GB file (2GB = 2147483648 bytes)
-if "sunos" not in sys.platform:
-    SUPPORT_HEADER_TRAILER = True
-else:
+if "sunos" in sys.platform or "linux" in sys.platform:
     SUPPORT_HEADER_TRAILER = False
+else:
+    SUPPORT_HEADER_TRAILER = True
 
 
 class Handler(asynchat.async_chat):
