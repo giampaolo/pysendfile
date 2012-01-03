@@ -79,13 +79,13 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     int fd;
     int sock;
     int flags = 0;
-    int ret;
     off_t offset;
-    size_t nbytes;
+    Py_ssize_t ret;
+    Py_ssize_t nbytes;
     char * head = NULL;
-    size_t head_len = 0;
     char * tail = NULL;
-    size_t tail_len = 0;
+    Py_ssize_t head_len = 0;
+    Py_ssize_t tail_len = 0;
     off_t sent;
     struct sf_hdtr hdtr;
     PyObject *offobj;
@@ -93,7 +93,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
                                "trailer", "flags", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwdict,
-                                     "iiOI|s#s#i:sendfile",
+                                     "iiOn|s#s#i:sendfile",
                                      keywords, &fd, &sock, &offobj, &nbytes,
                                      &head, &head_len, &tail, &tail_len,
                                      &flags)) {
