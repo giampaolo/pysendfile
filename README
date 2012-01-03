@@ -1,4 +1,3 @@
-
 =================================
     About
 =================================
@@ -29,7 +28,7 @@ Dragon Fly BSD
 SunOS
 AIX (non properly tested)
 
-Python versions from 2.4 to 3.2 by using a single code base.
+Python versions from 2.5 to 3.3 by using a single code base.
 
 =================================
     Example usage
@@ -76,4 +75,3 @@ took over maintenance and added support for:
 - large files
 - Linux header/trailer support via TCP_CORK socket option
 - non-blocking sockets
-

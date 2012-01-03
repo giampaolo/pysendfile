@@ -489,7 +489,7 @@ def test_main():
     def cleanup():
         safe_remove(TESTFN)
         safe_remove(TESTFN2)
-#        safe_remove(TESTFN3)  # XXX
+        safe_remove(TESTFN3)
 
     atexit.register(cleanup)
 
@@ -511,7 +511,7 @@ def test_main():
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(TestSendfile))
     if has_large_file_support():
-    #    test_suite.addTest(unittest.makeSuite(TestLargeFile))  # XXX
+        test_suite.addTest(unittest.makeSuite(TestLargeFile))
         pass
     else:
         atexit.register(warnings.warn, "couldn't run large file test because "
