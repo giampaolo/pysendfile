@@ -32,9 +32,11 @@ TESTFN3 = TESTFN + "3"
 DATA = _bytes("12345abcde" * 1024 * 1024)  # 10 Mb
 HOST = '127.0.0.1'
 BIGFILE_SIZE = 2500000000  # > 2GB file (2GB = 2147483648 bytes)
-if "sunos" in sys.platform or "linux" in sys.platform:
+try:
+    sendfile.sendfile(0, 0, 0, 0, 0)
+except TypeError:
     SUPPORT_HEADER_TRAILER = False
-else:
+except Exception:
     SUPPORT_HEADER_TRAILER = True
 
 def safe_remove(file):
@@ -156,15 +158,18 @@ def sendfile_wrapper(sock, file, offset, nbytes, header="", trailer=""):
     while 1:
         try:
             if SUPPORT_HEADER_TRAILER:
-                return sendfile.sendfile(sock, file, offset, nbytes, header,
+                sent = sendfile.sendfile(sock, file, offset, nbytes, header,
                                          trailer)
             else:
-                return sendfile.sendfile(sock, file, offset, nbytes)
+                sent = sendfile.sendfile(sock, file, offset, nbytes)
         except OSError:
             err = sys.exc_info()[1]
             if err.errno == errno.EAGAIN:  # retry
                 continue
             raise
+        else:
+            assert sent <= nbytes, (sent, nbytes)
+            return sent
 
 
 class TestSendfile(unittest.TestCase):
@@ -199,7 +204,6 @@ class TestSendfile(unittest.TestCase):
                 break
             total_sent += sent
             offset += sent
-            assert sent <= nbytes, (sent, nbytes)
             self.assertEqual(offset, total_sent)
 
         self.assertEqual(total_sent, len(DATA))
@@ -221,7 +225,6 @@ class TestSendfile(unittest.TestCase):
                 break
             total_sent += sent
             offset += sent
-            assert sent <= nbytes, (sent, nbytes)
 
         self.client.close()
         if "sunos" in sys.platform:
@@ -259,8 +262,8 @@ class TestSendfile(unittest.TestCase):
             with open(TESTFN2, 'wb') as f:
                 f.write(_bytes("abcde"))
             with open(TESTFN2, 'rb') as f:
-                sent = sendfile.sendfile(self.sockno, f.fileno(), 0, 4096,
-                                         trailer=_bytes("12345"))
+                sendfile.sendfile(self.sockno, f.fileno(), 0, 4096,
+                                 trailer=_bytes("12345"))
                 time.sleep(.1)
                 self.client.close()
                 self.server.wait()
@@ -286,7 +289,7 @@ class TestSendfile(unittest.TestCase):
             # On Mac OS X and FreeBSD, a value of 0 for nbytes
             # specifies to send until EOF is reached.
             # OSX implementation is broken though.
-            ret = sendfile_wrapper(self.sockno, self.fileno, 0, 0)
+            sendfile_wrapper(self.sockno, self.fileno, 0, 0)
             self.client.close()
             self.server.wait()
             data = self.server.handler_instance.get_data()
@@ -437,15 +440,11 @@ class TestLargeFile(unittest.TestCase):
         timer = RepeatedTimer(1, lambda: self.print_percent(total, BIGFILE_SIZE))
         timer.start()
         try:
-            try:
-                while 1:
-                    f.write(chunk)
-                    total += chunk_len
-                    if total >= BIGFILE_SIZE:
-                        break
-            except:
-                self.tearDown()
-                raise
+            while 1:
+                f.write(chunk)
+                total += chunk_len
+                if total >= BIGFILE_SIZE:
+                    break
         finally:
             f.close()
             timer.stop()
@@ -459,19 +458,17 @@ class TestLargeFile(unittest.TestCase):
                                                             file_size))
         timer.start()
         try:
-            try:
-                while 1:
-                    sent = sendfile_wrapper(self.sockno, self.fileno, offset,
-                                            nbytes)
-                    if sent == 0:
-                        break
-                    total_sent += sent
-                    offset += sent
-                    assert sent <= nbytes, (sent, nbytes)
-                    self.assertEqual(offset, total_sent)
-            except:
-                print
-                raise
+            while 1:
+                sent = sendfile_wrapper(self.sockno, self.fileno, offset,
+                                        nbytes)
+                if sent == 0:
+                    break
+                total_sent += sent
+                offset += sent
+                self.assertEqual(offset, total_sent)
+        except Exception:
+            print
+            raise
         finally:
             sys.stdout.write("\n")
             sys.stdout.flush()
@@ -492,7 +489,7 @@ def test_main():
     def cleanup():
         safe_remove(TESTFN)
         safe_remove(TESTFN2)
-        safe_remove(TESTFN3)
+#        safe_remove(TESTFN3)  # XXX
 
     atexit.register(cleanup)
 
@@ -514,7 +511,7 @@ def test_main():
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(TestSendfile))
     if has_large_file_support():
-        test_suite.addTest(unittest.makeSuite(TestLargeFile))
+        test_suite.addTest(unittest.makeSuite(TestLargeFile))  # XXX
         pass
     else:
         atexit.register(warnings.warn, "couldn't run large file test because "
