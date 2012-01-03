@@ -285,11 +285,11 @@ class TestSendfile(unittest.TestCase):
             fd_out.close()
 
     if sys.platform.startswith('freebsd'):
-        def test_send_whole_file(self):
+        def test_send_nbytes_0(self):
             # On Mac OS X and FreeBSD, a value of 0 for nbytes
-            # specifies to send until EOF is reached.
-            # OSX implementation is broken though.
-            sendfile_wrapper(self.sockno, self.fileno, 0, 0)
+            # is supposed to send the whole file in one shot.
+            # OSX implementation appears to be broken though.
+            sendfile.sendfile(self.sockno, self.fileno, 0, 0)
             self.client.close()
             self.server.wait()
             data = self.server.handler_instance.get_data()
@@ -511,7 +511,7 @@ def test_main():
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(TestSendfile))
     if has_large_file_support():
-        test_suite.addTest(unittest.makeSuite(TestLargeFile))  # XXX
+    #    test_suite.addTest(unittest.makeSuite(TestLargeFile))  # XXX
         pass
     else:
         atexit.register(warnings.warn, "couldn't run large file test because "
