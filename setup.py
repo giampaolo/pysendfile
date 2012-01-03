@@ -7,6 +7,9 @@ try:
 except ImportError:
     from distutils.core import setup, Extension
 
+if sys.version_info < (2, 5):
+    sys.exit('python version not supported (< 2.5)')
+
 if 'sunos' in sys.platform:
     libraries = ["sendfile"]
 else:

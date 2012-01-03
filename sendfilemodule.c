@@ -234,11 +234,11 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 {
     int out_fd, in_fd;
     off_t offset;
-    size_t nbytes;
-    ssize_t sent = 0;
+    Py_ssize_t nbytes;
+    Py_ssize_t sent;
     PyObject *offobj;
 
-    if (!PyArg_ParseTuple(args, "iiOI", &out_fd, &in_fd, &offobj, &nbytes)) {
+    if (!PyArg_ParseTuple(args, "iiOn", &out_fd, &in_fd, &offobj, &nbytes)) {
         return NULL;
     }
 
@@ -258,11 +258,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     if (sent == -1)
         return PyErr_SetFromErrno(PyExc_OSError);
 
-#if PY_MAJOR_VERSION >= 3 || (PY_MAJOR_VERSION >= 2 && PY_MINOR_VERSION >= 5)
     return Py_BuildValue("n", sent);
-#else
-    return Py_BuildValue("l", (long)sent);
-#endif
 }
 /* --- end Linux --- */
 
@@ -276,13 +272,11 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     int out_fd;
     int in_fd;
     off_t offset;
-    size_t nbytes;
-    ssize_t sent;
+    Py_ssize_t nbytes;
+    Py_ssize_t sent;
     PyObject *offobj;
 
-    if (!PyArg_ParseTuple(args,
-                          "iiOI",
-                           &out_fd, &in_fd, &offobj, &nbytes)) {
+    if (!PyArg_ParseTuple(args, "iiOn", &out_fd, &in_fd, &offobj, &nbytes)) {
         return NULL;
     }
     if (!_parse_off_t(offobj, &offset))
@@ -290,11 +284,8 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     sent = sendfile(out_fd, in_fd, &offset, nbytes);
     if (sent == -1)
         return PyErr_SetFromErrno(PyExc_OSError);
-#if PY_MAJOR_VERSION >= 3 || (PY_MAJOR_VERSION >= 2 && PY_MINOR_VERSION >= 5)
+
     return Py_BuildValue("n", sent);
-#else
-    return Py_BuildValue("l", (long)sent);
-#endif
 }
 #else
 /* --- end SUN OS --- */
