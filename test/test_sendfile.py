@@ -193,7 +193,7 @@ class TestSendfile(unittest.TestCase):
                 break
             total_sent += sent
             offset += sent
-            self.assertTrue(sent <= nbytes)
+            assert sent <= nbytes, (sent, nbytes)
             self.assertEqual(offset, total_sent)
 
         self.assertEqual(total_sent, len(DATA))
@@ -215,7 +215,7 @@ class TestSendfile(unittest.TestCase):
                 break
             total_sent += sent
             offset += sent
-            self.assertTrue(sent <= nbytes)
+            assert sent <= nbytes, (sent, nbytes)
 
         self.client.close()
         if "sunos" in sys.platform:
@@ -468,7 +468,7 @@ class TestLargeFile(unittest.TestCase):
                         break
                     total_sent += sent
                     offset += sent
-                    self.assertTrue(sent <= nbytes)
+                    assert sent <= nbytes, (sent, nbytes)
                     self.assertEqual(offset, total_sent)
             except:
                 print
@@ -528,4 +528,3 @@ def test_main():
 
 if __name__ == '__main__':
     test_main()
-
