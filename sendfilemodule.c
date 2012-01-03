@@ -14,7 +14,7 @@
  *     Copyright (C) 2008,2009 Niklas Edmundsson <nikke@acc.umu.se>
  *
  * Currently maintained by Giampaolo Rodola'
- *     Copyright (C) 2011 <g.rodola@gmail.com>
+ *     Copyright (C) 2011,2012 <g.rodola@gmail.com>
  *
  *
  *  The MIT License

@@ -1,16 +1,14 @@
- Original author:
-     Copyright (C) 2005 Ben Woolley <user tautolog at gmail>
-
- The AIX support code is:
-     Copyright (C) 2008,2009 Niklas Edmundsson <nikke@acc.umu.se>
-
- Currently maintained by Giampaolo Rodola'
-     Copyright (C) 2011 <g.rodola@gmail.com>
-
-
+======================================================================
 This software is distributed under the MIT license reproduced below:
 
- Copyright (c) <2011> <Ben Woolley, Niklas Edmundsson, Giampaolo Rodola'>
+Original author:
+    Copyright (C) 2005-2008  Ben Woolley <user tautolog at gmail>
+
+AIX support code:
+    Copyright (C) 2008-2009  Niklas Edmundsson <nikke@acc.umu.se>
+
+Current maintainer:
+    Copyright (C) 2009-2012  Giampaolo Rodola' <g.rodola@gmail.com>
 
 Permission to use, copy, modify, and distribute this software and
 its documentation for any purpose and without fee is hereby
@@ -21,11 +19,12 @@ Giampaolo Rodola' not be used in advertising or publicity pertaining to
 distribution of the software without specific, written prior
 permission.
 
-WE DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+Ben Woolley, Niklas Edmundsson and Giampaolo Rodola' DISCLAIM ALL
+WARRANTIES WITH REGARD TO THIS SOFTWARE,
 INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN
-NO EVENT WE ARE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL
-DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+NO EVENT Giampaolo Rodola' BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
 OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
 NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
+======================================================================
