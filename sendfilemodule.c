@@ -228,13 +228,6 @@ method_sendfile(PyObject *self, PyObject *args)
 /* --- start Linux --- */
 #elif defined (__linux__)
 #include <sys/sendfile.h>
-#include <sys/socket.h>
-
-// these are taken from linux/socket.h, for some reason including
-// that file doesn't work here.
-#define SOL_TCP 6
-#define TCP_CORK 3
-
 
 static PyObject *
 method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
