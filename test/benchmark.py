@@ -36,22 +36,33 @@ BIGFILE = "$testfile1"
 BIGFILE_SIZE = 1024 * 1024 * 1024 # 1 GB  1073741824  # 1 GB
 BUFFER_SIZE = 65536
 
+# --- python 3 compatibility functions
+
+def print_(s):
+    sys.stdout.write(s + "\n")
+    sys.stdout.flush()
+
+def b(s):
+    return bytes(s, 'ascii') if sys.version_info >= (3,) else s
+
+# --- utils
 
 def create_file(filename, size):
     f = open(filename, 'wb')
     bytes = 0
+    chunk = b("x") * BUFFER_SIZE
     while 1:
-        data = "x" * BUFFER_SIZE
-        bytes += len(data)
-        f.write(data)
+        f.write(chunk)
+        bytes += len(chunk)
         if bytes >= size:
             break
     f.close()
 
-# python 3 compatibility layer
-def print_(s):
-    sys.stdout.write(s + "\n")
-    sys.stdout.flush()
+def safe_remove(file):
+    try:
+        os.remove(file)
+    except OSError:
+        pass
 
 
 class Client:
@@ -128,11 +139,12 @@ def start_server(use_sendfile, keep_sending=False):
 
 
 def main():
+    atexit.register(lambda: safe_remove(BIGFILE))
+
     if not os.path.exists(BIGFILE) or os.path.getsize(BIGFILE) < BIGFILE_SIZE:
         print_("creating big file . . .")
         create_file(BIGFILE, BIGFILE_SIZE)
         print_("starting benchmark . . .")
-    atexit.register(lambda: os.remove(BIGFILE))
 
     # CPU time: use sendfile()
     server = Process(target=start_server, kwargs={"use_sendfile":True})
