@@ -380,7 +380,6 @@ class TestSendfile(unittest.TestCase):
             self.assertEqual(hash(data), hash(DATA))
 
 
-
 class RepeatedTimer:
 
     def __init__(self, timeout, fun):

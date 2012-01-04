@@ -15,8 +15,7 @@ speed: 1527.67 Mb/sec
 cpu:   3.47 usec/pass
 speed: 2882.97 Mb/sec
 
-
-Working with python 2.x only.
+Works with both python 2.X and 3.X.
 """
 
 import socket
@@ -25,6 +24,7 @@ import errno
 import timeit
 import time
 import atexit
+import sys
 from multiprocessing import Process
 
 from sendfile import sendfile
@@ -33,7 +33,7 @@ from sendfile import sendfile
 HOST = "127.0.0.1"
 PORT = 8022
 BIGFILE = "$testfile1"
-BIGFILE_SIZE = 1024 * 1024 * 1024 # 1 GB
+BIGFILE_SIZE = 1024 * 1024 * 1024 # 1 GB  1073741824  # 1 GB
 BUFFER_SIZE = 65536
 
 
@@ -47,6 +47,12 @@ def create_file(filename, size):
         if bytes >= size:
             break
     f.close()
+
+# python 3 compatibility layer
+def print_(s):
+    sys.stdout.write(s + "\n")
+    sys.stdout.flush()
+
 
 class Client:
 
@@ -70,7 +76,6 @@ class Client:
                 assert 0
             bytes_recv += len(chunk)
         return bytes_recv
-
 
 def start_server(use_sendfile, keep_sending=False):
     """A simple test server which sends a file once a client connects.
@@ -103,7 +108,8 @@ def start_server(use_sendfile, keep_sending=False):
         while 1:
             try:
                 sent = sendfile(sockno, fileno, offset, BUFFER_SIZE)
-            except OSError, err:
+            except OSError:
+                err = sys.exc_info()[1]
                 if err.errno in (errno.EAGAIN, errno.EBUSY):
                     continue
                 raise
@@ -123,9 +129,9 @@ def start_server(use_sendfile, keep_sending=False):
 
 def main():
     if not os.path.exists(BIGFILE) or os.path.getsize(BIGFILE) < BIGFILE_SIZE:
-        print "creating big file . . ."
+        print_("creating big file . . .")
         create_file(BIGFILE, BIGFILE_SIZE)
-        print "starting benchmark . . .\n"
+        print_("starting benchmark . . .")
     atexit.register(lambda: os.remove(BIGFILE))
 
     # CPU time: use sendfile()
@@ -166,14 +172,13 @@ def main():
     server.terminate()
     server.join()
 
-    print "=== send() ==="
-    print "cpu:   %.2f usec/pass" % (1000000 * t2 / 100000)
-    print "speed: %s Mb/sec" % round(bytes2 / 1024.0 / 1024.0, 2)
-    print
-    print "=== sendfile() ==="
-    print "cpu:   %.2f usec/pass" % (1000000 * t1 / 100000)
-    print "speed: %s Mb/sec" % round(bytes1 / 1024.0 / 1024.0, 2)
+    print_("=== send() ===")
+    print_("cpu:   %.2f usec/pass" % (1000000 * t2 / 100000))
+    print_("speed: %s MB/sec" % round(bytes2 / 1024.0 / 1024.0, 2))
+    print_("")
+    print_("=== sendfile() ===")
+    print_("cpu:   %.2f usec/pass" % (1000000 * t1 / 100000))
+    print_("speed: %s MB/sec" % round(bytes1 / 1024.0 / 1024.0, 2))
 
 if __name__ == '__main__':
     main()
-
