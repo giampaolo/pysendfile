@@ -133,14 +133,15 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     }
 
     if (ret < 0) {
-        if ((errno == EAGAIN) || (errno == EBUSY)) {
+        if ((errno == EAGAIN) || (errno == EBUSY) || (errno == EWOULDBLOCK)) {
             if (sent != 0) {
                 // some data has been sent
+                errno = 0;
                 goto done;
             }
             else {
                 // no data has been sent; upper application is supposed
-                // to retry on EAGAIN or EBUSY
+                // to retry on EAGAIN / EBUSY / EWOULDBLOCK
                 PyErr_SetFromErrno(PyExc_OSError);
                 return NULL;
             }
