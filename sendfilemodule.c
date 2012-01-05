@@ -43,6 +43,16 @@
 #include <Python.h>
 #include <stdlib.h>
 
+// force a compilation error if platform is not supported
+#if !defined(__FreeBSD__)   && \
+    !defined(__DragonFly__) && \
+    !defined(__APPLE__)     && \
+    !defined(_AIX)          && \
+    !defined(__linux__)     && \
+    !defined(__sun)
+#error platfom not supported
+#endif
+
 static int
 _parse_off_t(PyObject* arg, void* addr)
 {
@@ -291,15 +301,10 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 #else
 /* --- end SUN OS --- */
 
-/* --- being not supported --- */
-static PyObject *
-method_sendfile(PyObject *self, PyObject *args)
-{
-    PyErr_SetString(PyExc_NotImplementedError, "platform not supported");
-    return NULL;
-}
+#error platfom not supported
+
 #endif
-/* --- end not supported --- */
+
 
 
 static PyMethodDef

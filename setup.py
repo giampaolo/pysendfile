@@ -53,16 +53,7 @@ def main():
           ext_modules = [Extension('sendfile',
                                    sources=['sendfilemodule.c'],
                                    libraries=libraries)],
-          )
-    # check for NotImplementedError exception if platform is not supported
-    import sendfile
-    try:
-        sendfile.sendfile(0, 0, 0, 0)
-    except NotImplementedError:
-        raise NotImplementedError("platform %r not supported" % sys.platform)
-    except:
-        pass
-
+  )
 
 if __name__ == '__main__':
     main()
