@@ -289,15 +289,19 @@ class TestSendfile(unittest.TestCase):
 
     if sys.platform.startswith('freebsd'):
         def test_send_nbytes_0(self):
-            # On Mac OS X and FreeBSD, a value of 0 for nbytes
+            # On Mac OS X and FreeBSD a value of 0 for nbytes
             # is supposed to send the whole file in one shot.
-            # OSX implementation appears to be broken though.
-            sendfile.sendfile(self.sockno, self.fileno, 0, 0)
-            self.client.close()
-            self.server.wait()
-            data = self.server.handler_instance.get_data()
-            self.assertEqual(len(data), len(DATA))
-            self.assertEqual(hash(data), hash(DATA))
+            # OSX implementation appears to be just broken.
+            # On *BSD this works most of the times: sometimes
+            # EAGAIN is returned internally and here we get the
+            # number of bytes sent.
+            sent = sendfile.sendfile(self.sockno, self.fileno, 0, 0)
+            if sent == len(DATA):
+                self.client.close()
+                self.server.wait()
+                data = self.server.handler_instance.get_data()
+                self.assertEqual(len(data), len(DATA))
+                self.assertEqual(hash(data), hash(DATA))
 
     if hasattr(sendfile, "SF_NODISKIO"):
         def test_flags(self):
