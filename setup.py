@@ -25,6 +25,7 @@ def main():
           license='License :: OSI Approved :: MIT License',
           long_description=open('README', 'r').read(),
           keywords=['sendfile', 'ftp'],
+          zip_safe=True,
           classifiers = [
               'Development Status :: 4 - Beta',
               'Intended Audience :: Developers',

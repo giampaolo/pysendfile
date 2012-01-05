@@ -38,7 +38,7 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
-*/
+ */
 
 #include <Python.h>
 #include <stdlib.h>
@@ -306,23 +306,7 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
 #endif
 
 
-
-static PyMethodDef
-SendfileMethods[] =
-{
-    {"sendfile", method_sendfile,  METH_VARARGS | METH_KEYWORDS,
-"sendfile(out, in, offset, nbytes, header=None, trailer=None, flags=0)\n\n"
-"Return the number of bytes just being sent. When the end of file is reached "
-"return 0.\n"
-"headers and trailers are strings that are written before and after the data "
-"from in is written\n."
-"On Solaris, out may be the file descriptor of a regular file or the file "
-"descriptor of a socket. On all other platforms, out must be the file "
-"descriptor of an open socket.\n"
-"flags argument is only supported on FreeBSD (see man sendfile)."
-    },
-    {NULL, NULL, 0, NULL}        /* Sentinel */
-};
+/* --- module initialization --- */
 
 struct module_state {
     PyObject *error;
@@ -332,28 +316,48 @@ struct module_state {
 #define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
 #else
 #define GETSTATE(m) (&_state)
+static struct module_state _state;
 #endif
 
+static PyMethodDef sendfile_methods[] = {
+    {"sendfile", (PyCFunction)method_sendfile, METH_VARARGS | METH_KEYWORDS,
+     "sendfile(out, in, offset, nbytes, header=\"\", trailer=\"\", flags=0)\n\n"
+     "Copy nbytes bytes from file descriptor in (a regular file) to\n"
+     "file descriptor out (a socket) starting at offset.\n"
+     "Return the number of bytes just being sent. When the end of\n"
+     "file is reached return 0.\n"
+     "On Linux, if offset is given as None, the bytes are read from\n"
+     "the current position of in and the position of in is updated.\n"
+     "headers and trailers are strings that are written before and\n"
+     "after the data from in is written. In cross platform applications\n"
+     "their usage is discouraged (socket.send() or socket.sendall()\n"
+     "can be used instead).\n"
+     "On Solaris, out may be the file descriptor of a regular file\n"
+     "or the file descriptor of a socket. On all other platforms,\n"
+     "out must be the file descriptor of an open socket.\n"
+     "flags argument is only supported on FreeBSD.\n"
+    },
+    {NULL, NULL}
+};
+
 #if PY_MAJOR_VERSION >= 3
-static int
-sendfile_traverse(PyObject *m, visitproc visit, void *arg) {
+
+static int sendfile_traverse(PyObject *m, visitproc visit, void *arg) {
     Py_VISIT(GETSTATE(m)->error);
     return 0;
 }
 
-static int
-sendfile_clear(PyObject *m) {
+static int sendfile_clear(PyObject *m) {
     Py_CLEAR(GETSTATE(m)->error);
     return 0;
 }
 
-static struct PyModuleDef
-moduledef = {
+static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
         "sendfile",
         NULL,
         sizeof(struct module_state),
-        SendfileMethods,
+        sendfile_methods,
         NULL,
         sendfile_traverse,
         sendfile_clear,
@@ -368,15 +372,15 @@ PyInit_sendfile(void)
 #else
 #define INITERROR return
 
-void initsendfile(void)
+void
+initsendfile(void)
 #endif
 {
 #if PY_MAJOR_VERSION >= 3
     PyObject *module = PyModule_Create(&moduledef);
 #else
-    PyObject *module = Py_InitModule("sendfile", SendfileMethods);
+    PyObject *module = Py_InitModule("sendfile", sendfile_methods);
 #endif
-    // constants
 #ifdef SF_NODISKIO
     PyModule_AddIntConstant(module, "SF_NODISKIO", SF_NODISKIO);
 #endif
@@ -386,8 +390,13 @@ void initsendfile(void)
 #ifdef SF_SYNC
     PyModule_AddIntConstant(module, "SF_SYNC", SF_SYNC);
 #endif
+    if (module == NULL)
+        INITERROR;
+    struct module_state *st = GETSTATE(module);
 
-    if (module == NULL) {
+    st->error = PyErr_NewException("sendfile.Error", NULL, NULL);
+    if (st->error == NULL) {
+        Py_DECREF(module);
         INITERROR;
     }
 
