@@ -212,6 +212,7 @@ class TestSendfile(unittest.TestCase):
             time.sleep(.1)
         self.server.wait()
         data = self.server.handler_instance.get_data()
+        self.assertEqual(len(data), len(DATA))
         self.assertEqual(hash(data), hash(DATA))
 
     def test_send_from_certain_offset(self):
@@ -256,6 +257,7 @@ class TestSendfile(unittest.TestCase):
             self.client.close()
             self.server.wait()
             data = self.server.handler_instance.get_data()
+            self.assertEqual(len(data), len(expected_expected_data))
             self.assertEqual(hash(data), hash(expected_data))
 
         def test_trailer(self):
@@ -293,6 +295,7 @@ class TestSendfile(unittest.TestCase):
             self.client.close()
             self.server.wait()
             data = self.server.handler_instance.get_data()
+            self.assertEqual(len(data), len(DATA))
             self.assertEqual(hash(data), hash(DATA))
 
     if hasattr(sendfile, "SF_NODISKIO"):
@@ -377,6 +380,7 @@ class TestSendfile(unittest.TestCase):
             self.client.close()
             self.server.wait()
             data = self.server.handler_instance.get_data()
+            self.assertEqual(len(data), len(DATA))
             self.assertEqual(hash(data), hash(DATA))
 
 
