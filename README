@@ -1,14 +1,13 @@
-=================================
-    About
-=================================
+=====
+About
+=====
 
 A python interface to sendfile(2) system call:
 http://code.google.com/p/py-sendfile/
 
-
-=================================
-    Install
-=================================
+=======
+Install
+=======
 
 $ sudo setup.py install
 
@@ -16,23 +15,22 @@ $ sudo setup.py install
 
 $ easy_install py-sendfile
 
+===================
+Supported platforms
+===================
 
-=================================
-    Supported platforms
-=================================
-
-Linux
-OSX
-FreeBSD
-Dragon Fly BSD
-SunOS
-AIX (non properly tested)
+* Linux
+* OSX
+* FreeBSD
+* Dragon Fly BSD
+* SunOS
+* AIX (non properly tested)
 
 Python versions from 2.5 to 3.3 by using a single code base.
 
-=================================
-    Example usage
-=================================
+=============
+Example usage
+=============
 
 import socket
 import errno
@@ -55,10 +53,9 @@ while 1:
             break  # done
         offset += sent
 
-
-=================================
-    Authors
-=================================
+=======
+Authors
+=======
 
 py-sendfile was originally written by Ben Woolley including Linux and FreeBSD
 support.

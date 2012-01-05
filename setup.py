@@ -16,10 +16,15 @@ else:
     libraries = []
 
 def main():
-    setup(name = 'py-sendfile',
-          version = '2.0.0',
-          description = 'A Python interface to sendfile(2)',
-          url = 'http://code.google.com/p/py-sendfile/',
+    setup(name='py-sendfile',
+          version='2.0.0',
+          description='A Python interface to sendfile(2)',
+          url='http://code.google.com/p/py-sendfile/',
+          author='Giampaolo Rodola',
+          author_email='g.rodola@gmail.com',
+          license='License :: OSI Approved :: MIT License',
+          long_description=open('README', 'r').read(),
+          keywords=['sendfile', 'ftp'],
           classifiers = [
               'Development Status :: 4 - Beta',
               'Intended Audience :: Developers',
