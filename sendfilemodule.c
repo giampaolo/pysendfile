@@ -3,7 +3,7 @@
  */
 
 /*
- * py-sendfile
+ * pysendfile
  *
  * A Python module interface to sendfile(2)
  *

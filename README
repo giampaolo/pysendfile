@@ -3,7 +3,7 @@ About
 =====
 
 A python interface to sendfile(2) system call:
-http://code.google.com/p/py-sendfile/
+http://code.google.com/p/pysendfile/
 
 =======
 Install
@@ -13,7 +13,7 @@ $ sudo setup.py install
 
 ...or:
 
-$ easy_install py-sendfile
+$ easy_install pysendfile
 
 ===================
 Supported platforms
@@ -57,7 +57,7 @@ while 1:
 Authors
 =======
 
-py-sendfile was originally written by Ben Woolley including Linux and FreeBSD
+pysendfile was originally written by Ben Woolley including Linux and FreeBSD
 support.
 
 Later on Niklas Edmundsson took over maintenance and added AIX support.

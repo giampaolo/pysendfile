@@ -15,22 +15,29 @@ if 'sunos' in sys.platform:
 else:
     libraries = []
 
+name = 'pysendfile'
+version = '0.2.0'
+download_url = "http://pysendfile.googlecode.com/files/" + name + "-" + \
+                                                          version + ".tar.gz"
+
 def main():
-    setup(name='py-sendfile',
-          version='2.0.0',
+    setup(name=name,
+          url='http://code.google.com/p/pysendfile/',
+          version=version,
           description='A Python interface to sendfile(2)',
-          url='http://code.google.com/p/py-sendfile/',
+          long_description=open('README', 'r').read(),
+          url='http://code.google.com/p/pysendfile/',
           author='Giampaolo Rodola',
           author_email='g.rodola@gmail.com',
+          download_url=download_url,
           license='License :: OSI Approved :: MIT License',
-          long_description=open('README', 'r').read(),
           keywords=['sendfile', 'ftp'],
-          zip_safe=True,
           classifiers = [
-              'Development Status :: 4 - Beta',
+              'Development Status :: 5 - Production/Stable',
               'Intended Audience :: Developers',
               'Operating System :: POSIX :: Linux',
               'Operating System :: MacOS :: MacOS X',
+              'Operating System :: POSIX :: BSD',
               'Operating System :: POSIX :: BSD :: FreeBSD',
               'Operating System :: POSIX :: SunOS/Solaris',
               'Operating System :: POSIX :: AIX',
@@ -48,13 +55,11 @@ def main():
               'Topic :: System :: Operating System',
               'Topic :: Internet :: File Transfer Protocol (FTP)',
               'Topic :: Internet :: WWW/HTTP',
-              'License :: OSI Approved :: GNU Library or Lesser General ' \
-                                          'Public License (LGPL)',
-               ],
+              'License :: OSI Approved :: GNU Library or Lesser General ',
+          ],
           ext_modules = [Extension('sendfile',
                                    sources=['sendfilemodule.c'],
                                    libraries=libraries)],
   )
 
-if __name__ == '__main__':
-    main()
+main()
