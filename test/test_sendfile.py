@@ -47,6 +47,20 @@ def safe_remove(file):
     except OSError:
         pass
 
+def has_large_file_support():
+    # taken from Python's Lib/test/test_largefile.py
+    with open(TESTFN, 'wb', buffering=0) as f:
+        try:
+            f.seek(BIGFILE_SIZE)
+            # seeking is not enough of a test: you must write and flush too
+            f.write(_bytes('x'))
+            f.flush()
+        except (IOError, OverflowError):
+            return False
+        else:
+            return True
+
+
 class Handler(asynchat.async_chat):
     ac_in_buffer_size = BUFFER_LEN
     ac_out_buffer_size = BUFFER_LEN
@@ -197,6 +211,7 @@ class TestSendfile(unittest.TestCase):
         self.client.close()
         if self.server.running:
             self.server.stop()
+        self.server = None  # allow garbage collection
 
     def test_send_whole_file(self):
         # normal send
@@ -501,21 +516,6 @@ def test_main():
 
     atexit.register(cleanup)
 
-    def has_large_file_support():
-        # taken from Python's Lib/test/test_largefile.py
-        f = open(TESTFN, 'wb', buffering=0)
-        try:
-            f.seek(BIGFILE_SIZE)
-            # seeking is not enough of a test: you must write and flush too
-            f.write(_bytes('x'))
-            f.flush()
-        except (IOError, OverflowError):
-            f.close()
-            return False
-        else:
-            f.close()
-            return True
-
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(TestSendfile))
     if has_large_file_support():
@@ -523,8 +523,7 @@ def test_main():
         #test_suite.addTest(unittest.makeSuite(TestLargeFile))
         pass
     else:
-        atexit.register(warnings.warn, "couldn't run large file test because "
-                  "filesystem does not have largefile support.", RuntimeWarning)
+        atexit.register(warnings.warn, "large files unsupported", RuntimeWarning)
     cleanup()
     with open(TESTFN, "wb") as f:
         f.write(DATA)

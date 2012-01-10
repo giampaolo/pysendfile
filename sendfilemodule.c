@@ -13,8 +13,8 @@
  * The AIX support code is:
  *     Copyright (C) 2008,2009 Niklas Edmundsson <nikke@acc.umu.se>
  *
- * Currently maintained by Giampaolo Rodola'
- *     Copyright (C) 2011,2012 <g.rodola@gmail.com>
+ * Rewritten from scratch and maintained by Giampaolo Rodola'
+ *     Copyright (C) 2009,2012 <g.rodola@gmail.com>
  *
  *
  *  The MIT License
@@ -189,7 +189,7 @@ method_sendfile(PyObject *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "iiLk|s#s#",
                           &out_fd, &in_fd, &offset, &nbytes, &hdr, &hdrsize,
-			  &trail, &trailsize))
+                          &trail, &trailsize))
         return NULL;
 
     if(hdr != NULL) {
@@ -205,8 +205,8 @@ method_sendfile(PyObject *self, PyObject *args)
         sf_iobuf.trailer_length = trailsize;
     }
     else {
-	sf_iobuf.trailer_data = NULL;
-	sf_iobuf.trailer_length = 0;
+        sf_iobuf.trailer_data = NULL;
+        sf_iobuf.trailer_length = 0;
     }
     sf_iobuf.file_descriptor = in_fd;
     sf_iobuf.file_offset = offset;
@@ -214,9 +214,9 @@ method_sendfile(PyObject *self, PyObject *args)
 
     Py_BEGIN_ALLOW_THREADS;
     do {
-	    sf_iobuf.bytes_sent = 0; /* Really needed? */
+            sf_iobuf.bytes_sent = 0; /* Really needed? */
             rc = send_file(&out_fd, &sf_iobuf, SF_DONT_CACHE);
-	    sts += sf_iobuf.bytes_sent;
+            sts += sf_iobuf.bytes_sent;
     } while( rc == 1 || (rc == -1 && errno == EINTR) );
     Py_END_ALLOW_THREADS;
 

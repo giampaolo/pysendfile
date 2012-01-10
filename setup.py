@@ -26,7 +26,6 @@ def main():
           version=version,
           description='A Python interface to sendfile(2)',
           long_description=open('README', 'r').read(),
-          url='http://code.google.com/p/pysendfile/',
           author='Giampaolo Rodola',
           author_email='g.rodola@gmail.com',
           download_url=download_url,
