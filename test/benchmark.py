@@ -45,16 +45,23 @@ BIGFILE = "$testfile1"
 BIGFILE_SIZE = 1024 * 1024 * 1024 # 1 GB
 BUFFER_SIZE = 65536
 
+# python 3 compatibility layer
+def b(s):
+    return bytes(s, 'ascii') if sys.version_info >= (3,) else s
+
+# python 2.5 compatibility
+try:
+    next
+except NameError:
+    def next(iterator):
+        return iterator.next()
+
 def print_(s, hilite=False):
     if hilite:
         bold = '1'
         s = '\x1b[%sm%s\x1b[0m' % (';'.join([bold]), s)
     sys.stdout.write(s + "\n")
     sys.stdout.flush()
-
-# python 3 compatibility layer
-def b(s):
-    return bytes(s, 'ascii') if sys.version_info >= (3,) else s
 
 def create_file(filename, size):
     with open(filename, 'wb') as f:
