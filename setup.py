@@ -30,7 +30,7 @@ def main():
           author_email='g.rodola@gmail.com',
           download_url=download_url,
           license='License :: OSI Approved :: MIT License',
-          keywords=['sendfile', 'ftp'],
+          keywords=['sendfile', 'python', 'performance', 'ftp'],
           classifiers = [
               'Development Status :: 5 - Production/Stable',
               'Intended Audience :: Developers',

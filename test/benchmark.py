@@ -3,17 +3,18 @@
 
 """
 A simle benchmark script which compares plain send() and sendfile()
-performances in terms of CPU time spent and bytes transmitted per second.
+performances in terms of CPU time spent and bytes transmitted in
+one second.
 
-This is what I get on my Linux 2.6.35-22 box, Intel core-duo, 3.1 GHz:
+This is what I get on my Linux 2.6.38 box, AMD dual core 1.6 GHz:
 
-=== send() ===
-cpu:   6.60 usec/pass
-speed: 1527.67 Mb/sec
+send()
+  cpu:     28.41 usec/pass
+  rate:   362.13 MB/sec
 
-=== sendfile() ===
-cpu:   3.47 usec/pass
-speed: 2882.97 Mb/sec
+sendfile()
+  cpu:     11.25 usec/pass
+  rate:   848.56 MB/sec
 
 Works with both python 2.X and 3.X.
 """
@@ -25,27 +26,33 @@ import timeit
 import time
 import atexit
 import sys
+import optparse
+import threading
+import itertools
+import signal
 from multiprocessing import Process
 
 from sendfile import sendfile
 
 
+# overridable defaults
+
 HOST = "127.0.0.1"
 PORT = 8022
 BIGFILE = "$testfile1"
-BIGFILE_SIZE = 1024 * 1024 * 1024 # 1 GB  1073741824  # 1 GB
+BIGFILE_SIZE = 1024 * 1024 * 1024 # 1 GB
 BUFFER_SIZE = 65536
 
-# --- python 3 compatibility functions
-
-def print_(s):
+def print_(s, hilite=False):
+    if hilite:
+        bold = '1'
+        s = '\x1b[%sm%s\x1b[0m' % (';'.join([bold]), s)
     sys.stdout.write(s + "\n")
     sys.stdout.flush()
 
+# python 3 compatibility layer
 def b(s):
     return bytes(s, 'ascii') if sys.version_info >= (3,) else s
-
-# --- utils
 
 def create_file(filename, size):
     f = open(filename, 'wb')
@@ -64,6 +71,21 @@ def safe_remove(file):
     except OSError:
         pass
 
+
+class Spinner(threading.Thread):
+
+    def run(self):
+        self._stop = False
+        self._spinner = itertools.cycle('-\|/')
+        while not self._stop:
+            sys.stdout.write(self._spinner.next() + "\b")
+            sys.stdout.flush()
+            time.sleep(.1)
+
+    def stop(self):
+        self._stop = True
+        self.join()
+    
 
 class Client:
 
@@ -88,12 +110,11 @@ class Client:
             bytes_recv += len(chunk)
         return bytes_recv
 
+
 def start_server(use_sendfile, keep_sending=False):
     """A simple test server which sends a file once a client connects.
-    use_sendfile decides whether using sendfile() or plain sendall()
-    method.
-    If keep_sending is True restart sending file when EOF is reached
-    instead of disconnecting.
+    use_sendfile decides whether using sendfile() or plain send().
+    If keep_sending is True restart sending file when EOF is reached.
     """
     sock = socket.socket()
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -101,6 +122,14 @@ def start_server(use_sendfile, keep_sending=False):
     sock.listen(1)
     conn, addr = sock.accept()
     file = open(BIGFILE, 'rb')
+
+    def on_exit(signum, fram):
+        file.close(); 
+        conn.close()
+        sys.exit(0)
+    signal.signal(signal.SIGTERM, on_exit) 
+    signal.signal(signal.SIGINT, on_exit) 
+
     if not use_sendfile:
         while 1:
             chunk = file.read(BUFFER_SIZE)
@@ -134,17 +163,20 @@ def start_server(use_sendfile, keep_sending=False):
                         break
                 else:
                     offset += sent
-    file.close()
-    conn.close()
 
 
 def main():
-    atexit.register(lambda: safe_remove(BIGFILE))
+    parser = optparse.OptionParser()
+    parser.add_option('-k', '--keepfile', action="store_true", default=False,
+                      help="do not remove test file on exit")
+    options, args = parser.parse_args()
+    if not options.keepfile:
+        atexit.register(lambda: safe_remove(BIGFILE))
 
     if not os.path.exists(BIGFILE) or os.path.getsize(BIGFILE) < BIGFILE_SIZE:
-        print_("creating big file . . .")
+        print_("creating big file...")
         create_file(BIGFILE, BIGFILE_SIZE)
-        print_("starting benchmark . . .")
+    print_("starting benchmark...")
 
     # CPU time: use sendfile()
     server = Process(target=start_server, kwargs={"use_sendfile":True})
@@ -184,13 +216,19 @@ def main():
     server.terminate()
     server.join()
 
-    print_("=== send() ===")
-    print_("cpu:   %.2f usec/pass" % (1000000 * t2 / 100000))
-    print_("speed: %s MB/sec" % round(bytes2 / 1024.0 / 1024.0, 2))
+    print_(" ")
+    print_("send()", hilite=True)
+    print_("  cpu:   %7.2f usec/pass" % (1000000 * t2 / 100000))
+    print_("  rate:  %7.2f MB/sec" % round(bytes2 / 1024.0 / 1024.0, 2))
     print_("")
-    print_("=== sendfile() ===")
-    print_("cpu:   %.2f usec/pass" % (1000000 * t1 / 100000))
-    print_("speed: %s MB/sec" % round(bytes1 / 1024.0 / 1024.0, 2))
+    print_("sendfile()", hilite=True)
+    print_("  cpu:   %7.2f usec/pass" % (1000000 * t1 / 100000))
+    print_("  rate:  %7.2f MB/sec" % round(bytes1 / 1024.0 / 1024.0, 2))
 
 if __name__ == '__main__':
-    main()
+    s = Spinner()
+    s.start()
+    try:
+        main()
+    finally:
+        s.stop()
