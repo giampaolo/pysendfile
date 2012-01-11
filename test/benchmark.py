@@ -75,15 +75,15 @@ def safe_remove(file):
 class Spinner(threading.Thread):
 
     def run(self):
-        self._stop = False
+        self._exit = False
         self._spinner = itertools.cycle('-\|/')
-        while not self._stop:
-            sys.stdout.write(self._spinner.next() + "\b")
+        while not self._exit:
+            sys.stdout.write(next(self._spinner) + "\b")
             sys.stdout.flush()
             time.sleep(.1)
 
     def stop(self):
-        self._stop = True
+        self._exit = True
         self.join()
     
 
@@ -121,6 +121,7 @@ def start_server(use_sendfile, keep_sending=False):
     sock.bind((HOST, PORT))
     sock.listen(1)
     conn, addr = sock.accept()
+    sock.close()
     file = open(BIGFILE, 'rb')
 
     def on_exit(signum, fram):
@@ -154,7 +155,7 @@ def start_server(use_sendfile, keep_sending=False):
                     continue
                 raise
             else:
-                if sent == 0:
+                if not sent:
                     # EOF
                     if keep_sending:
                         offset = 0

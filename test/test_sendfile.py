@@ -273,7 +273,7 @@ class TestSendfile(unittest.TestCase):
             self.client.close()
             self.server.wait()
             data = self.server.handler_instance.get_data()
-            self.assertEqual(len(data), len(expected_expected_data))
+            self.assertEqual(len(data), len(expected_data))
             self.assertEqual(hash(data), hash(expected_data))
 
         def test_trailer(self):
