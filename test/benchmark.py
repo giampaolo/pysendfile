@@ -19,6 +19,7 @@ sendfile()
 Works with both python 2.X and 3.X.
 """
 
+from __future__ import with_statement
 import socket
 import os
 import errno
@@ -30,6 +31,7 @@ import optparse
 import threading
 import itertools
 import signal
+import contextlib
 from multiprocessing import Process
 
 from sendfile import sendfile
@@ -55,15 +57,14 @@ def b(s):
     return bytes(s, 'ascii') if sys.version_info >= (3,) else s
 
 def create_file(filename, size):
-    f = open(filename, 'wb')
-    bytes = 0
-    chunk = b("x") * BUFFER_SIZE
-    while 1:
-        f.write(chunk)
-        bytes += len(chunk)
-        if bytes >= size:
-            break
-    f.close()
+    with open(filename, 'wb') as f:
+        bytes = 0
+        chunk = b("x") * BUFFER_SIZE
+        while 1:
+            f.write(chunk)
+            bytes += len(chunk)
+            if bytes >= size:
+                break
 
 def safe_remove(file):
     try:
@@ -95,20 +96,22 @@ class Client:
         self.sock.settimeout(1)
 
     def retr(self):
-        while 1:
-            data = self.sock.recv(BUFFER_SIZE)
-            if not data:
-                break
+        with contextlib.closing(self.sock):
+            while 1:
+                data = self.sock.recv(BUFFER_SIZE)
+                if not data:
+                    break
 
     def retr_for_1_sec(self):
-        stop_at = time.time() + 1
-        bytes_recv = 0
-        while stop_at > time.time():
-            chunk = self.sock.recv(BUFFER_SIZE)
-            if not chunk:
-                assert 0
-            bytes_recv += len(chunk)
-        return bytes_recv
+        with contextlib.closing(self.sock):
+            stop_at = time.time() + 1
+            bytes_recv = 0
+            while stop_at > time.time():
+                chunk = self.sock.recv(BUFFER_SIZE)
+                if not chunk:
+                    assert 0
+                bytes_recv += len(chunk)
+            return bytes_recv
 
 
 def start_server(use_sendfile, keep_sending=False):
