@@ -3,6 +3,13 @@
 # $Id$
 #
 
+"""
+pysendfile test suite; works with both python 2.x and 3.x (no need
+to run 2to3 tool first).
+Accepts a -k cmdline option to avoid removing the big file created
+during tests.
+"""
+
 from __future__ import with_statement
 
 import unittest
@@ -16,6 +23,7 @@ import errno
 import time
 import atexit
 import warnings
+import optparse
 
 import sendfile
 
@@ -508,20 +516,23 @@ class TestLargeFile(unittest.TestCase):
 
 
 def test_main():
+    parser = optparse.OptionParser()
+    parser.add_option('-k', '--keepfile', action="store_true", default=False,
+                      help="do not remove test big file on exit")
+    options, args = parser.parse_args()
+    if not options.keepfile:
+        atexit.register(lambda: safe_remove(TESTFN3))
 
     def cleanup():
         safe_remove(TESTFN)
         safe_remove(TESTFN2)
-        safe_remove(TESTFN3)
 
     atexit.register(cleanup)
 
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.makeSuite(TestSendfile))
     if has_large_file_support():
-        # XXX
-        #test_suite.addTest(unittest.makeSuite(TestLargeFile))
-        pass
+        test_suite.addTest(unittest.makeSuite(TestLargeFile))
     else:
         atexit.register(warnings.warn, "large files unsupported", RuntimeWarning)
     cleanup()
