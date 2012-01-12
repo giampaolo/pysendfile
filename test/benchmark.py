@@ -1,6 +1,29 @@
 #!/usr/bin/env python
 # $Id$
 
+# ======================================================================
+# This software is distributed under the MIT license reproduced below:
+#
+#     Copyright (C) 2009-2012  Giampaolo Rodola' <g.rodola@gmail.com>
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby
+# granted, provided that the above copyright notice appear in all
+# copies and that both that copyright notice and this permission
+# notice appear in supporting documentation, and that the name of
+# Giampaolo Rodola' not be used in advertising or publicity pertaining to
+# distribution of the software without specific, written prior
+# permission.
+#
+# Giampaolo Rodola' DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+# INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN
+# NO EVENT Giampaolo Rodola' BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+# CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+# OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+# NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+# CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+# ======================================================================
+
 """
 A simle benchmark script which compares plain send() and sendfile()
 performances in terms of CPU time spent and bytes transmitted in
@@ -93,7 +116,7 @@ class Spinner(threading.Thread):
     def stop(self):
         self._exit = True
         self.join()
-    
+
 
 class Client:
 
@@ -135,11 +158,11 @@ def start_server(use_sendfile, keep_sending=False):
     file = open(BIGFILE, 'rb')
 
     def on_exit(signum, fram):
-        file.close(); 
+        file.close();
         conn.close()
         sys.exit(0)
-    signal.signal(signal.SIGTERM, on_exit) 
-    signal.signal(signal.SIGINT, on_exit) 
+    signal.signal(signal.SIGTERM, on_exit)
+    signal.signal(signal.SIGINT, on_exit)
 
     if not use_sendfile:
         while 1:
