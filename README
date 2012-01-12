@@ -1,9 +1,15 @@
+===========
+Quick links
+===========
+
+* Home page: http://code.google.com/p/pysendfile
+* Download: http://code.google.com/p/pysendfile/downloads/list
+
 =====
 About
 =====
 
-A python interface to sendfile(2) system call:
-http://code.google.com/p/pysendfile/
+A python interface to sendfile(2) system call.
 
 =======
 Install
@@ -32,44 +38,25 @@ Python versions from 2.5 to 3.3 by using a single code base.
 Example usage
 =============
 
-import socket
-import errno
-from sendfile import sendfile
+::
 
-file = open("somefile", "rb")
-sock = socket.socket()
-sock.connect(("127.0.0.1", 8021))
-offset = 0
+    import socket
+    import errno
+    from sendfile import sendfile
 
-while 1:
-    try:
-        sent = sendfile(sock.fileno(), file.fileno(), offset, 4096)
-    except OSError, err:
-        if err.errno == (errno.EAGAIN, errno.EBUSY):  # retry
-            continue
-        raise
-    else:
-        if sent == 0:
-            break  # done
-        offset += sent
+    file = open("somefile", "rb")
+    sock = socket.socket()
+    sock.connect(("127.0.0.1", 8021))
+    offset = 0
 
-=======
-Authors
-=======
-
-pysendfile was originally written by Ben Woolley including Linux , FreeBSD
-and DragonflyBSD support.
-
-Later on Niklas Edmundsson took over maintenance and added AIX support.
-
-It's been completely rewritten by Giampaolo Rodola' (g.rodola@gmail.com) who
-took over maintenance and added support for:
-
- * Python 3
- * non-blocking sockets
- * large files support
- * Mac OSX
- * Sun OS
- * FreeBSD flag argument
- * a simple benchmark suite
- * unit tests
+    while 1:
+        try:
+            sent = sendfile(sock.fileno(), file.fileno(), offset, 4096)
+        except OSError, err:
+            if err.errno == (errno.EAGAIN, errno.EBUSY):  # retry
+                continue
+            raise
+        else:
+            if sent == 0:
+                break  # done
+            offset += sent
