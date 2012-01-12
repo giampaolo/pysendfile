@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: py-sendfile
+Version: 1.2.2
+Summary: A Python interface to sendfile(2)
+Home-page: UNKNOWN
+Author: Ben Woolley
+Author-email: user ben at host tautology.org
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
