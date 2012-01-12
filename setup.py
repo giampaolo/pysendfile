@@ -39,7 +39,7 @@ else:
     libraries = []
 
 name = 'pysendfile'
-version = '0.2.0'
+version = '2.0.0'
 download_url = "http://pysendfile.googlecode.com/files/" + name + "-" + \
                                                           version + ".tar.gz"
 
