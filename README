@@ -45,7 +45,7 @@ while 1:
     try:
         sent = sendfile(sock.fileno(), file.fileno(), offset, 4096)
     except OSError, err:
-        if err.errno == errno.EAGAIN:  # retry
+        if err.errno == (errno.EAGAIN, errno.EBUSY):  # retry
             continue
         raise
     else:
@@ -57,18 +57,19 @@ while 1:
 Authors
 =======
 
-pysendfile was originally written by Ben Woolley including Linux and FreeBSD
-support.
+pysendfile was originally written by Ben Woolley including Linux , FreeBSD
+and DragonflyBSD support.
 
 Later on Niklas Edmundsson took over maintenance and added AIX support.
 
 It's been completely rewritten by Giampaolo Rodola' (g.rodola@gmail.com) who
 took over maintenance and added support for:
 
-- Python 3
-- OSX
-- SunOS
-- FreeBSD flag argument
-- large files
-- Linux header/trailer support via TCP_CORK socket option
-- non-blocking sockets
+ * Python 3
+ * non-blocking sockets
+ * large files support
+ * Mac OSX
+ * Sun OS
+ * FreeBSD flag argument
+ * a simple benchmark suite
+ * unit tests
