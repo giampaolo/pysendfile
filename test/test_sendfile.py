@@ -29,7 +29,7 @@ import sendfile
 
 PY3 = sys.version_info >= (3,)
 
-def _bytes(x):
+def b(x):
     if PY3:
         return bytes(x, 'ascii')
     return x
@@ -37,7 +37,7 @@ def _bytes(x):
 TESTFN = "$testfile"
 TESTFN2 = TESTFN + "2"
 TESTFN3 = TESTFN + "3"
-DATA = _bytes("12345abcde" * 1024 * 1024)  # 10 Mb
+DATA = b("12345abcde" * 1024 * 1024)  # 10 Mb
 HOST = '127.0.0.1'
 BIGFILE_SIZE = 2500000000  # > 2GB file (2GB = 2147483648 bytes)
 BUFFER_LEN = 4096
@@ -61,7 +61,7 @@ def has_large_file_support():
         try:
             f.seek(BIGFILE_SIZE)
             # seeking is not enough of a test: you must write and flush too
-            f.write(_bytes('x'))
+            f.write(b('x'))
             f.flush()
         except (IOError, OverflowError):
             return False
@@ -77,14 +77,14 @@ class Handler(asynchat.async_chat):
         asynchat.async_chat.__init__(self, conn)
         self.in_buffer = []
         self.closed = False
-        self.push(_bytes("220 ready\r\n"))
+        self.push(b("220 ready\r\n"))
 
     def handle_read(self):
         data = self.recv(BUFFER_LEN)
         self.in_buffer.append(data)
 
     def get_data(self):
-        return _bytes('').join(self.in_buffer)
+        return b('').join(self.in_buffer)
 
     def handle_close(self):
         self.close()
@@ -265,7 +265,7 @@ class TestSendfile(unittest.TestCase):
     if SUPPORT_HEADER_TRAILER:
         def test_header(self):
             total_sent = 0
-            header = _bytes("x") * 512
+            header = b("x") * 512
             sent = sendfile.sendfile(self.sockno, self.fileno, 0, header=header)
             total_sent += sent
             offset = BUFFER_LEN
@@ -286,15 +286,15 @@ class TestSendfile(unittest.TestCase):
 
         def test_trailer(self):
             with open(TESTFN2, 'wb') as f:
-                f.write(_bytes("abcde"))
+                f.write(b("abcde"))
             with open(TESTFN2, 'rb') as f:
                 sendfile.sendfile(self.sockno, f.fileno(), 0,
-                                  trailer=_bytes("12345"))
+                                  trailer=b("12345"))
                 time.sleep(.1)
                 self.client.close()
                 self.server.wait()
                 data = self.server.handler_instance.get_data()
-                self.assertEqual(data, _bytes("abcde12345"))
+                self.assertEqual(data, b("abcde12345"))
 
     def test_non_socket(self):
         fd_in = open(TESTFN, 'rb')
@@ -346,7 +346,7 @@ class TestSendfile(unittest.TestCase):
         self.client.close()
         self.server.wait()
         data = self.server.handler_instance.get_data()
-        self.assertEqual(data, _bytes(''))
+        self.assertEqual(data, b(''))
 
     if "sunos" not in sys.platform:
         def test_invalid_offset(self):
@@ -359,7 +359,7 @@ class TestSendfile(unittest.TestCase):
                 self.fail("exception not raised")
 
     def test_small_file(self):
-        data = _bytes('foo bar')
+        data = b('foo bar')
         with open(TESTFN2, 'wb') as f:
             f.write(data)
         with open(TESTFN2, 'rb') as f:
@@ -376,7 +376,7 @@ class TestSendfile(unittest.TestCase):
             self.assertEqual(data_sent, data)
 
     def test_small_file_and_offset_overflow(self):
-        data = _bytes('foo bar')
+        data = b('foo bar')
         with open(TESTFN2, 'wb') as f:
             f.write(data)
         with open(TESTFN2, 'rb') as f:
@@ -384,10 +384,10 @@ class TestSendfile(unittest.TestCase):
             self.client.close()
             self.server.wait()
             data_sent = self.server.handler_instance.get_data()
-            self.assertEqual(data_sent, _bytes(''))
+            self.assertEqual(data_sent, b(''))
 
     def test_empty_file(self):
-        data = _bytes('')
+        data = b('')
         with open(TESTFN2, 'wb') as f:
             f.write(data)
         with open(TESTFN2, 'rb') as f:
@@ -466,7 +466,7 @@ class TestLargeFile(unittest.TestCase):
             return
         f = open(TESTFN3, 'wb')
         chunk_len = 65536
-        chunk = _bytes('x' * chunk_len)
+        chunk = b('x' * chunk_len)
         total = 0
         timer = RepeatedTimer(1, lambda: self.print_percent(total, BIGFILE_SIZE))
         timer.start()
