@@ -1,0 +1,8 @@
+sendfilemodule.c
+setup.py
+test.py
+py_sendfile.egg-info/PKG-INFO
+py_sendfile.egg-info/SOURCES.txt
+py_sendfile.egg-info/dependency_links.txt
+py_sendfile.egg-info/not-zip-safe
+py_sendfile.egg-info/top_level.txt
