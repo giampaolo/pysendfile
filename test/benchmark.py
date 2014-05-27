@@ -1,10 +1,9 @@
 #!/usr/bin/env python
-# $Id$
 
 # ======================================================================
 # This software is distributed under the MIT license reproduced below:
 #
-#     Copyright (C) 2009-2012  Giampaolo Rodola' <g.rodola@gmail.com>
+#     Copyright (C) 2009-2014  Giampaolo Rodola' <g.rodola@gmail.com>
 #
 # Permission to use, copy, modify, and distribute this software and
 # its documentation for any purpose and without fee is hereby
@@ -43,34 +42,34 @@ Works with both python 2.X and 3.X.
 """
 
 from __future__ import with_statement
-import socket
-import os
-import errno
-import timeit
-import time
 import atexit
-import sys
-import optparse
-import threading
-import itertools
-import signal
 import contextlib
+import errno
+import itertools
+import optparse
+import os
+import signal
+import socket
+import sys
+import threading
+import time
+import timeit
 from multiprocessing import Process
 
 from sendfile import sendfile
-
-
 # overridable defaults
 
 HOST = "127.0.0.1"
 PORT = 8022
 BIGFILE = "$testfile1"
-BIGFILE_SIZE = 1024 * 1024 * 1024 # 1 GB
+BIGFILE_SIZE = 1024 * 1024 * 1024  # 1 GB
 BUFFER_SIZE = 65536
+
 
 # python 3 compatibility layer
 def b(s):
-    return bytes(s, 'ascii') if sys.version_info >= (3,) else s
+    return bytes(s, 'ascii') if sys.version_info >= (3, ) else s
+
 
 # python 2.5 compatibility
 try:
@@ -79,12 +78,14 @@ except NameError:
     def next(iterator):
         return iterator.next()
 
+
 def print_(s, hilite=False):
     if hilite:
         bold = '1'
         s = '\x1b[%sm%s\x1b[0m' % (';'.join([bold]), s)
     sys.stdout.write(s + "\n")
     sys.stdout.flush()
+
 
 def create_file(filename, size):
     with open(filename, 'wb') as f:
@@ -95,6 +96,7 @@ def create_file(filename, size):
             bytes += len(chunk)
             if bytes >= size:
                 break
+
 
 def safe_remove(file):
     try:
@@ -158,7 +160,8 @@ def start_server(use_sendfile, keep_sending=False):
     file = open(BIGFILE, 'rb')
 
     def on_exit(signum, fram):
-        file.close();
+        file.close()
+
         conn.close()
         sys.exit(0)
     signal.signal(signal.SIGTERM, on_exit)
@@ -213,7 +216,7 @@ def main():
     print_("starting benchmark...")
 
     # CPU time: use sendfile()
-    server = Process(target=start_server, kwargs={"use_sendfile":True})
+    server = Process(target=start_server, kwargs={"use_sendfile": True})
     server.start()
     time.sleep(0.1)
     t1 = timeit.Timer(setup="from __main__ import Client; client = Client()",
@@ -222,7 +225,7 @@ def main():
     server.join()
 
     # CPU time: use send()
-    server = Process(target=start_server, kwargs={"use_sendfile":False})
+    server = Process(target=start_server, kwargs={"use_sendfile": False})
     server.start()
     time.sleep(0.1)
     t2 = timeit.Timer(setup="from __main__ import Client; client = Client()",
@@ -231,8 +234,8 @@ def main():
     server.join()
 
     # MB/sec: use sendfile()
-    server = Process(target=start_server, kwargs={"use_sendfile":True,
-                                                  "keep_sending":True})
+    server = Process(target=start_server, kwargs={"use_sendfile": True,
+                                                  "keep_sending": True})
     server.start()
     time.sleep(0.1)
     client = Client()
@@ -241,8 +244,8 @@ def main():
     server.join()
 
     # MB/sec: use sendfile()
-    server = Process(target=start_server, kwargs={"use_sendfile":False,
-                                                  "keep_sending":True})
+    server = Process(target=start_server, kwargs={"use_sendfile": False,
+                                                  "keep_sending": True})
     server.start()
     time.sleep(0.1)
     client = Client()
@@ -258,6 +261,7 @@ def main():
     print_("sendfile()", hilite=True)
     print_("  cpu:   %7.2f usec/pass" % (1000000 * t1 / 100000))
     print_("  rate:  %7.2f MB/sec" % round(bytes1 / 1024.0 / 1024.0, 2))
+
 
 if __name__ == '__main__':
     s = Spinner()

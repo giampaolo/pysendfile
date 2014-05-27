@@ -1,10 +1,9 @@
 #!/usr/bin/env python
-# $Id$
 
 # ======================================================================
 # This software is distributed under the MIT license reproduced below:
 #
-#     Copyright (C) 2009-2012  Giampaolo Rodola' <g.rodola@gmail.com>
+#     Copyright (C) 2009-2014  Giampaolo Rodola' <g.rodola@gmail.com>
 #
 # Permission to use, copy, modify, and distribute this software and
 # its documentation for any purpose and without fee is hereby
@@ -30,6 +29,10 @@ try:
 except ImportError:
     from distutils.core import setup, Extension
 
+NAME = 'pysendfile'
+VERSION = '2.0.1'
+
+
 if sys.version_info < (2, 5):
     sys.exit('python version not supported (< 2.5)')
 
@@ -38,24 +41,19 @@ if 'sunos' in sys.platform:
 else:
     libraries = []
 
-name = 'pysendfile'
-version = '2.0.0'
-download_url = "http://pysendfile.googlecode.com/files/" + name + "-" + \
-                                                          version + ".tar.gz"
 
 def main():
-    setup(name=name,
-          url='http://code.google.com/p/pysendfile/',
-          version=version,
+    setup(name=NAME,
+          url='https://github.com/giampaolo/pysendfile',
+          version=VERSION,
           description='A Python interface to sendfile(2)',
-          long_description=open('README', 'r').read(),
+          long_description=open('README.rst', 'r').read(),
           author='Giampaolo Rodola',
           author_email='g.rodola@gmail.com',
-          download_url=download_url,
           platforms='UNIX',
           license='MIT',
           keywords=['sendfile', 'python', 'performance', 'ftp'],
-          classifiers = [
+          classifiers=[
               'Development Status :: 5 - Production/Stable',
               'Intended Audience :: Developers',
               'Operating System :: POSIX :: Linux',
@@ -65,7 +63,6 @@ def main():
               'Operating System :: POSIX :: SunOS/Solaris',
               'Operating System :: POSIX :: AIX',
               'Programming Language :: C',
-              'Programming Language :: Python :: 2.4',
               'Programming Language :: Python :: 2.5',
               'Programming Language :: Python :: 2.6',
               'Programming Language :: Python :: 2.7',
@@ -73,15 +70,16 @@ def main():
               'Programming Language :: Python :: 3.0',
               'Programming Language :: Python :: 3.1',
               'Programming Language :: Python :: 3.2',
+              'Programming Language :: Python :: 3.3',
+              'Programming Language :: Python :: 3.4',
               'Topic :: System :: Networking',
               'Topic :: System :: Operating System',
               'Topic :: Internet :: File Transfer Protocol (FTP)',
               'Topic :: Internet :: WWW/HTTP',
               'License :: OSI Approved :: MIT License',
           ],
-          ext_modules = [Extension('sendfile',
-                                   sources=['sendfilemodule.c'],
-                                   libraries=libraries)],
-  )
+          ext_modules=[Extension('sendfile',
+                                 sources=['sendfilemodule.c'],
+                                 libraries=libraries)])
 
 main()

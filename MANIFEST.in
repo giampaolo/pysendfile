@@ -1,0 +1,9 @@
+include .travis.yml
+include HISTORY.rst
+include LICENSE
+include Makefile
+include MANIFEST.in
+include README.rst
+include sendfilemodule.c
+include setup.py
+recursive-include test *.py

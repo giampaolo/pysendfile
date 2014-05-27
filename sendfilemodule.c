@@ -1,8 +1,4 @@
 /*
- * $Id$
- */
-
-/*
  * pysendfile
  *
  * A Python module interface to sendfile(2)
@@ -14,7 +10,7 @@
  *     Copyright (C) 2008,2009 Niklas Edmundsson <nikke@acc.umu.se>
  *
  * Rewritten from scratch and maintained by Giampaolo Rodola'
- *     Copyright (C) 2009,2012 <g.rodola@gmail.com>
+ *     Copyright (C) 2009,2014 <g.rodola@gmail.com>
  *
  *
  *  The MIT License
@@ -392,13 +388,6 @@ initsendfile(void)
 #endif
     if (module == NULL)
         INITERROR;
-    struct module_state *st = GETSTATE(module);
-
-    st->error = PyErr_NewException("sendfile.Error", NULL, NULL);
-    if (st->error == NULL) {
-        Py_DECREF(module);
-        INITERROR;
-    }
 
 #if PY_MAJOR_VERSION >= 3
     return module;
