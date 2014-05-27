@@ -1,6 +1,6 @@
 Bug tracker at https://github.com/giampaolo/pysendfile/issues
 
-Version 2.0.1 (unreleased)
+Version 2.0.1 - 2014-05-27
 ==========================
 
 - #20: host tarball on PYPI
