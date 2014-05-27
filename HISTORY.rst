@@ -6,9 +6,9 @@ Version 2.0.1 (unreleased)
 - #20: host tarball on PYPI
 - #21: project migrated from google code to github
 - #21: project migrated from SVN to GIT
-- #22: use of travis continuous integration
+- #22: pysendfile won't compile on python 3.4
 - #23: add a Makefile
-- #24: pysendfile won't compile on python 3.4
+- #24: use of travis continuous integration
 
 Version 2.0.0 - 2012-01-12
 ==========================
