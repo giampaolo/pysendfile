@@ -21,7 +21,6 @@ clean:
 	rm -rf .tox
 	rm -rf build
 	rm -rf dist
-	rm -rf docs/_build
 
 build: clean
 	$(PYTHON) setup.py build
@@ -52,7 +51,10 @@ pyflakes:
 flake8:
 	@git ls-files | grep \\.py$ | xargs flake8
 
-
-# Upload source tarball on https://pypi.python.org/pypi/pysendfile.
+# upload source tarball on https://pypi.python.org/pypi/pysendfile.
 upload-src: clean
 	$(PYTHON) setup.py sdist upload
+
+# git-tag a new release
+git-tag-release:
+	git tag -a release-`python -c "import setup; print(setup.VERSION)"` -m `git rev-list HEAD --count`:`git rev-parse --short HEAD`

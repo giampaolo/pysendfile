@@ -29,9 +29,9 @@ try:
 except ImportError:
     from distutils.core import setup, Extension
 
+
 NAME = 'pysendfile'
 VERSION = '2.0.1'
-
 
 if sys.version_info < (2, 5):
     sys.exit('python version not supported (< 2.5)')
@@ -82,4 +82,5 @@ def main():
                                  sources=['sendfilemodule.c'],
                                  libraries=libraries)])
 
-main()
+if __name__ == '__main__':
+    main()
