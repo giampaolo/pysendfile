@@ -164,7 +164,7 @@ Differences with send()
   supposed to retry, ECONNRESET, ENOTCONN, ESHUTDOWN, ECONNABORTED in case of
   disconnection. Some examples:
   `benchmark script <https://github.com/giampaolo/pysendfile/blob/release-2.0.1/test/benchmark.py#L182>`__,
-  `test suite <https://github.com/giampaolo/pysendfile/blob/release-2.0.1/test/test_sendfile.py#L224>`__,
+  `test suite <https://github.com/giampaolo/pysendfile/blob/release-2.0.1/test/test_sendfile.py#L202>`__,
   `pyftpdlib wrapper <http://code.google.com/p/pyftpdlib/source/browse/tags/release-0.7.0/pyftpdlib/ftpserver.py#1035>`__.
 
 ===================
