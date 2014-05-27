@@ -1,36 +1,69 @@
+.. image:: https://pypip.in/d/pysendfile/badge.png
+    :target: https://crate.io/packages/pysendfile/
+    :alt: Download this month
+
+.. image:: https://pypip.in/v/pysendfile/badge.png
+    :target: https://pypi.python.org/pypi/pysendfile/
+    :alt: Latest version
+
+.. image:: https://pypip.in/license/pysendfile/badge.png
+    :target: https://pypi.python.org/pypi/pysendfile/
+    :alt: License
+
+.. image:: https://api.travis-ci.org/giampaolo/pysendfile.png?branch=master
+    :target: https://travis-ci.org/giampaolo/pysendfile
+    :alt: Travis
+
+===========
 Quick links
 ===========
 
-* Home page: http://code.google.com/p/pysendfile
-* Download: https://pypi.python.org/pypi/pysendfile
+- `Home page <https://github.com/giampaolo/pysendfile>`_
+- `Mailing list <http://groups.google.com/group/py-sendfile>`_
+- `Blog <http://grodola.blogspot.com/search/label/pysendfile>`_
+- `What's new <https://github.com/giampaolo/pysendfile/blob/master/HISTORY.rst>`_
 
+=====
 About
 =====
 
-A python interface to sendfile(2) system call.
-Note: as of Python 3.3 you can simply use `os.sendfile() <https://docs.python.org/3/library/os.html#os.sendfile>`_ instead.
+`sendfile(2) <http://linux.die.net/man/2/sendfile>`__ is a system call which
+provides a "zero-copy" way of copying data from one file descriptor to another
+(a socket). The phrase "zero-copy" refers to the fact that all of the copying
+of data between the two descriptors is done entirely by the kernel, with no
+copying of data into userspace buffers. This is particularly useful when
+sending a file over a socket (e.g. FTP).
+The normal way of sending a file over a socket involves reading data from the
+file into a userspace buffer, then write that buffer to the socket via
+`send() <http://docs.python.org/library/socket.html#socket.socket.send>`__ or
+`sendall() <http://docs.python.org/library/socket.html#socket.socket.sendall>`__:
 
-Install
-=======
+.. code-block:: python
 
-$ pip install pysendfile
+    # how a file is tipically sent
 
-Supported platforms
-===================
+    import socket
 
-* Linux
-* OSX
-* FreeBSD
-* Dragon Fly BSD
-* SunOS
-* AIX (non properly tested)
+    file = open("somefile", "rb")
+    sock = socket.socket()
+    sock.connect(("127.0.0.1", 8021))
 
-Python versions from 2.5 to 3.4 by using a single code base.
+    while True:
+        chunk = file.read(65536)
+        if not chunk:
+            break  # EOF
+        sock.sendall(chunk)
 
-Example usage
-=============
+This copying of the data twice (once into the userland buffer, and once out
+from that userland buffer) imposes some performance and resource penalties.
+`sendfile(2) <http://linux.die.net/man/2/sendfile>`__ syscall avoids these
+penalties by avoiding any use of userland buffers; it also results in a single
+system call (and thus only one context switch), rather than the series of
+`read(2) <http://linux.die.net/man/2/read>`__ /
+`write(2) <http://linux.die.net/man/2/write>`__ system calls (each system call
+requiring a context switch) used internally for the data copying.
 
-::
+.. code-block:: python
 
     import socket
     from sendfile import sendfile
@@ -46,3 +79,140 @@ Example usage
         if sent == 0:
             break  # EOF
         offset += sent
+
+==================
+A simple benchmark
+==================
+
+This `benchmark script <https://github.com/giampaolo/pysendfile/blob/master/test/benchmark.py>`__
+implements the two examples above and compares plain socket.send() and
+sendfile() performances in terms of CPU time spent and bytes transmitted per
+second resulting in sendfile() being about **2.5x faster**. These are the
+results I get on my Linux 2.6.38 box, AMD dual-core 1.6 GHz:
+
+*send()*
+
++---------------+-----------------+
+| CPU time      | 28.84 usec/pass |
++---------------+-----------------+
+| transfer rate | 359.38 MB/sec   |
++---------------+-----------------+
+
+*sendfile()*
+
++---------------+-----------------+
+| CPU time      | 11.28 usec/pass |
++---------------+-----------------+
+| transfer rate | 860.88 MB/sec   |
++---------------+-----------------+
+
+===========================
+When do you want to use it?
+===========================
+
+Basically any application sending files over the network can take advantage of
+sendfile(2). HTTP and FTP servers are a typical example.
+`proftpd <http://www.proftpd.org/>`__ and
+`vsftpd <https://security.appspot.com/vsftpd.html>`__ are known to use it, so is
+`pyftpdlib <http://code.google.com/p/pyftpdlib/>`__.
+
+=================
+API documentation
+=================
+
+sendfile module provides a single function: sendfile().
+
+- ``sendfile.sendfile(out, in, offset, nbytes, header="", trailer="", flags=0)``
+
+  Copy *nbytes* bytes from file descriptor *in* (a regular file) to file
+  descriptor *out* (a socket) starting at *offset*. Return the number of
+  bytes just being sent. When the end of file is reached return 0.
+  On Linux, if *offset* is given as *None*, the bytes are read from the current
+  position of *in* and the position of *in* is updated.
+  *headers* and *trailers* are strings that are written before and after the
+  data from *in* is written. In cross platform applications their usage is
+  discouraged
+  (`send() <http://docs.python.org/library/socket.html#socket.socket.send>`__ or
+  `sendall() <http://docs.python.org/library/socket.html#socket.socket.sendall>`__
+  can be used instead). On Solaris, _out_ may be the file descriptor of a
+  regular file or the file descriptor of a socket. On all other platforms,
+  *out* must be the file descriptor of an open socket.
+  *flags* argument is only supported on FreeBSD.
+
+- ``sendfile.SF_NODISKIO``
+- ``sendfile.SF_MNOWAIT``
+- ``sendfile.SF_SYNC``
+
+  Parameters for the _flags_ argument, if the implementation supports it. They
+  are available on FreeBSD platforms. See `FreeBSD's man sendfile(2) <http://www.freebsd.org/cgi/man.cgi?query=sendfile&sektion=2>`__.
+
+=======================
+Differences with send()
+=======================
+
+- sendfile(2) works with regular (mmap-like) files only (e.g. you can't use it
+  with a `StringIO <http://docs.python.org/library/stringio.html>`__ object).
+- Also, it must be clear that the file can only be sent "as is" (e.g. you
+  can't modify the content while transmitting).
+  There might be problems with non regular filesystems such as NFS,
+  SMBFS/Samba and CIFS. For this please refer to
+  `proftpd documentation <http://www.proftpd.org/docs/howto/Sendfile.html>`__.
+- `OSError <http://docs.python.org/library/exceptions.html#exceptions.OSError>`__
+  is raised instead of `socket.error <http://docs.python.org/library/socket.html#socket.error>`__.
+  The accompaining `error codes <http://docs.python.org/library/errno.html>`__
+  have the same meaning though: EAGAIN, EWOULDBLOCK, EBUSY meaning you are
+  supposed to retry, ECONNRESET, ENOTCONN, ESHUTDOWN, ECONNABORTED in case of
+  disconnection. Some examples:
+  `benchmark script <https://github.com/giampaolo/pysendfile/blob/master/test/benchmark.py#L178>`__,
+  `test suite <https://github.com/giampaolo/pysendfile/blob/master/test/test_sendfile.py#L204>`__,
+  `pyftpdlib wrapper <http://code.google.com/p/pyftpdlib/source/browse/tags/release-0.7.0/pyftpdlib/ftpserver.py#1035>`__.
+
+===================
+Supported platforms
+===================
+
+This module works with Python versions from **2.5** to **3.4**. The supported platforms are:
+
+- **Linux**
+- **Mac OSX**
+- **FreeBSD**
+- **Dragon Fly BSD**
+- **Sun OS**
+- **AIX** (not properly tested)
+
+=======
+Support
+=======
+
+Feel free to mail me at *g.rodola [AT] gmail [DOT] com* or post on the the
+mailing list: http://groups.google.com/group/py-sendfile.
+
+======
+Status
+======
+
+As of now the code includes a solid `test suite <https://github.com/giampaolo/pysendfile/blob/master/test/test_sendfile.py>`__ and its ready for production use.
+It's been included in `pyftpdlib <http://code.google.com/p/pyftpdlib/>`__
+project and used in production environments for almost a year now without any
+problem being reported so far.
+
+=======
+Authors
+=======
+
+pysendfile was originally written by *Ben Woolley* including Linux, FreeBSD and
+DragonFly BSD support. Later on *Niklas Edmundsson* took over maintenance and
+added AIX support. After a couple of years of project stagnation
+`Giampaolo Rodola' <http://grodola.blogspot.com/p/about.html>`__ took over
+maintenance and rewrote it from scratch adding support for:
+
+- Python 3
+- non-blocking sockets
+- `large file <http://docs.python.org/library/posix.html#large-file-support>`__ support
+- Mac OSX
+- Sun OS
+- FreeBSD flag argument
+- multiple threads (release GIL)
+- a simple benchmark suite
+- unit tests
+- documentation
