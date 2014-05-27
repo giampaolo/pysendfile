@@ -9,6 +9,7 @@ Version 2.0.1 (unreleased)
 - #22: pysendfile won't compile on python 3.4
 - #23: add a Makefile
 - #24: use of travis continuous integration
+- #25: use tox for multiple python versions testing
 
 Version 2.0.0 - 2012-01-12
 ==========================
