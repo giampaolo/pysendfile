@@ -7,15 +7,6 @@ python:
     - 3.4
     - 3.5
 install:
-    - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then pip install unittest2; fi
-    - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi
+    - ./.ci/travis/install.sh
 script:
-    - pip install flake8
-    - python setup.py build
-    - python setup.py install
-    - python test/test_sendfile.py
-    - make flake8
-os:
-    - linux
-    - osx
-
+    - ./.ci/travis/run.sh

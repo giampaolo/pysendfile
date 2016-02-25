@@ -7,3 +7,4 @@ include README.rst
 include sendfilemodule.c
 include setup.py
 recursive-include test *.py
+recursive-include .ci *
