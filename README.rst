@@ -1,18 +1,22 @@
-.. image:: https://pypip.in/d/pysendfile/badge.png
-    :target: https://crate.io/packages/pysendfile/
-    :alt: Download this month
-
-.. image:: https://pypip.in/v/pysendfile/badge.png
-    :target: https://pypi.python.org/pypi/pysendfile/
-    :alt: Latest version
-
-.. image:: https://pypip.in/license/pysendfile/badge.png
-    :target: https://pypi.python.org/pypi/pysendfile/
-    :alt: License
+.. image:: https://img.shields.io/pypi/dm/pysendfile.svg
+    :target: https://pypi.python.org/pypi/pysendfile#downloads
+    :alt: Downloads this month
 
 .. image:: https://api.travis-ci.org/giampaolo/pysendfile.png?branch=master
     :target: https://travis-ci.org/giampaolo/pysendfile
-    :alt: Travis
+    :alt: Linux tests (Travis)
+
+.. image:: https://img.shields.io/pypi/v/pysendfile.svg
+    :target: https://pypi.python.org/pypi/pysendfile/
+    :alt: Latest version
+
+.. image:: https://img.shields.io/github/stars/giampaolo/pysendfile.svg
+    :target: https://github.com/giampaolo/pysendfile/
+    :alt: Github stars
+
+.. image:: https://img.shields.io/pypi/l/pysendfile.svg
+    :target: https://pypi.python.org/pypi/pysendfile/
+    :alt: License
 
 ===========
 Quick links
