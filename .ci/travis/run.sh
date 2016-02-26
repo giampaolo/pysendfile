@@ -7,7 +7,7 @@ if [[ "$(uname -s)" == 'Darwin' ]]; then
     if which pyenv > /dev/null; then
         eval "$(pyenv init -)"
     fi
-    pyenv activate psutil
+    pyenv activate pysendfile
 fi
 
 python setup.py build

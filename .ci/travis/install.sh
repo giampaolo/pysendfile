@@ -18,27 +18,27 @@ if [[ "$(uname -s)" == 'Darwin' ]]; then
     case "${PYVER}" in
         # py26)
         #     pyenv install 2.6.9
-        #     pyenv virtualenv 2.6.9 psutil
+        #     pyenv virtualenv 2.6.9 pysendfile
         #     ;;
         py27)
             pyenv install 2.7.10
-            pyenv virtualenv 2.7.10 psutil
+            pyenv virtualenv 2.7.10 pysendfile
             ;;
         # py32)
         #     pyenv install 3.2.6
-        #     pyenv virtualenv 3.2.6 psutil
+        #     pyenv virtualenv 3.2.6 pysendfile
         #     ;;
         # py33)
         #     pyenv install 3.3.6
-        #     pyenv virtualenv 3.3.6 psutil
+        #     pyenv virtualenv 3.3.6 pysendfile
         #     ;;
         py34)
             pyenv install 3.4.3
-            pyenv virtualenv 3.4.3 psutil
+            pyenv virtualenv 3.4.3 pysendfile
             ;;
     esac
     pyenv rehash
-    pyenv activate psutil
+    pyenv activate pysendfile
 fi
 
 if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then pip install unittest2; fi
