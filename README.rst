@@ -44,7 +44,7 @@ file into a userspace buffer, then write that buffer to the socket via
 
 .. code-block:: python
 
-    # how a file is tipically sent
+    # how a file is typically sent
 
     import socket
 
