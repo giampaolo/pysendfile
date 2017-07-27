@@ -55,6 +55,7 @@ def b(x):
         return bytes(x, 'ascii')
     return x
 
+
 TESTFN = "$testfile"
 TESTFN2 = TESTFN + "2"
 TESTFN3 = TESTFN + "3"
@@ -542,6 +543,7 @@ class TestLargeFile(unittest.TestCase):
 def cleanup():
     safe_remove(TESTFN)
     safe_remove(TESTFN2)
+
 
 atexit.register(cleanup)
 

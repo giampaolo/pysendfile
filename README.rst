@@ -1,7 +1,3 @@
-.. image:: https://img.shields.io/pypi/dm/pysendfile.svg
-    :target: https://pypi.python.org/pypi/pysendfile#downloads
-    :alt: Downloads this month
-
 .. image:: https://api.travis-ci.org/giampaolo/pysendfile.png?branch=master
     :target: https://travis-ci.org/giampaolo/pysendfile
     :alt: Linux tests (Travis)
@@ -170,6 +166,16 @@ Differences with send()
   `benchmark script <https://github.com/giampaolo/pysendfile/blob/release-2.0.1/test/benchmark.py#L182>`__,
   `test suite <https://github.com/giampaolo/pysendfile/blob/release-2.0.1/test/test_sendfile.py#L202>`__,
   `pyftpdlib wrapper <http://code.google.com/p/pyftpdlib/source/browse/tags/release-0.7.0/pyftpdlib/ftpserver.py#1035>`__.
+
+===============
+Non-blocking IO
+===============
+
+- sendfile(2) can be used with non-blocking sockets, meaning if you try to
+  send a chunk of data over a socket fd which is not "ready" you'll immediately
+  get EAGAIN (then you can retry later by using `select()`, `epoll()` or
+  whatever).
+- the regular file fd, on the other hand, *can* block
 
 ===================
 Supported platforms

@@ -6,12 +6,11 @@
  * Original author:
  *     Copyright (C) 2005 Ben Woolley <user tautolog at gmail>
  *
- * The AIX support code is:
- *     Copyright (C) 2008,2009 Niklas Edmundsson <nikke@acc.umu.se>
+ * AIX implementation:
+ *     Copyright (C) 2008, 2009 Niklas Edmundsson <nikke@acc.umu.se>
  *
- * Rewritten from scratch and maintained by Giampaolo Rodola'
- *     Copyright (C) 2009,2014 <g.rodola@gmail.com>
- *
+ * Rewritten from scratch and maintained Giampaolo Rodola';
+ *     Copyright (C) 2009, present day Giampaolo Rodola' <g.rodola@gmail.com>
  *
  *  The MIT License
  *
@@ -159,11 +158,11 @@ method_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     goto done;
 
 done:
-    #if defined(HAVE_LARGEFILE_SUPPORT)
-        return Py_BuildValue("L", sent);
-    #else
-        return Py_BuildValue("l", sent);
-    #endif
+#if defined(HAVE_LARGEFILE_SUPPORT)
+    return Py_BuildValue("L", sent);
+#else
+    return Py_BuildValue("l", sent);
+#endif
 }
 /* --- end OSX / FreeBSD / Dragonfly --- */
 
@@ -223,11 +222,11 @@ method_sendfile(PyObject *self, PyObject *args)
         return NULL;
     }
     else {
-    #if defined(HAVE_LARGEFILE_SUPPORT)
+#if defined(HAVE_LARGEFILE_SUPPORT)
         return Py_BuildValue("L", sts);
-    #else
+#else
         return Py_BuildValue("l", sts);
-    #endif
+#endif
     }
 }
 /* --- end AIX --- */
@@ -312,7 +311,6 @@ struct module_state {
 #define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
 #else
 #define GETSTATE(m) (&_state)
-static struct module_state _state;
 #endif
 
 static PyMethodDef sendfile_methods[] = {
