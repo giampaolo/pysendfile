@@ -151,7 +151,7 @@ Differences with send()
 =======================
 
 - sendfile(2) works with regular (mmap-like) files only (e.g. you can't use it
-  with a `StringIO <http://docs.python.org/library/stringio.html>`__ object).
+  with a `StringIO <https://docs.python.org/2/library/stringio.html>`__ object).
 - Also, it must be clear that the file can only be sent "as is" (e.g. you
   can't modify the content while transmitting).
   There might be problems with non regular filesystems such as NFS,
@@ -181,7 +181,15 @@ Non-blocking IO
 Supported platforms
 ===================
 
-This module works with Python versions from **2.5** to **3.4**. The supported platforms are:
+This module works with Python versions from **2.5** to **3.X** and it inspired
+the work to port it to Python stdlib.
+Sendfile support is available in Python 3.X stdlib as
+`os.sendfile <https://docs.python.org/3/library/os.html#os.sendfile>`__ and
+`socket.sendfile <https://docs.python.org/3/library/socket.html#socket.socket.sendfile>`__
+(see `bpo-10882 <http://bugs.python.org/issue10882>`__ and
+`bpo-17552 <https://bugs.python.org/issue17552>`__) so this package is mainly
+useful if you're on Python 2.
+The supported platforms are:
 
 - **Linux**
 - **Mac OSX**
@@ -202,9 +210,9 @@ Status
 ======
 
 As of now the code includes a solid `test suite <https://github.com/giampaolo/pysendfile/blob/master/test/test_sendfile.py>`__ and its ready for production use.
-It's been included in `pyftpdlib <http://code.google.com/p/pyftpdlib/>`__
-project and used in production environments for almost a year now without any
-problem being reported so far.
+It's included in `pyftpdlib <http://code.google.com/p/pyftpdlib/>`__
+project and used in production environments for years without any problem being
+reported so far.
 
 =======
 Authors
