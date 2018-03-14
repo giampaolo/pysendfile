@@ -182,13 +182,13 @@ Supported platforms
 ===================
 
 This module works with Python versions from **2.5** to **3.X** and it inspired
-the work to port it to Python stdlib.
+the integration into Python 3 stdlib
+(see `bpo-10882 <http://bugs.python.org/issue10882>`__ and
+`bpo-17552 <https://bugs.python.org/issue17552>`__).
 Sendfile support is available in Python 3.X stdlib as
 `os.sendfile <https://docs.python.org/3/library/os.html#os.sendfile>`__ and
 `socket.sendfile <https://docs.python.org/3/library/socket.html#socket.socket.sendfile>`__
-(see `bpo-10882 <http://bugs.python.org/issue10882>`__ and
-`bpo-17552 <https://bugs.python.org/issue17552>`__) so this package is mainly
-useful if you're on Python 2.
+so this package is mainly useful if you're on Python 2.
 The supported platforms are:
 
 - **Linux**
