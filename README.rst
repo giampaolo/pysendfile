@@ -66,6 +66,7 @@ requiring a context switch) used internally for the data copying.
 .. code-block:: python
 
     import socket
+    import os
     from sendfile import sendfile
 
     file = open("somefile", "rb")
@@ -76,9 +77,9 @@ requiring a context switch) used internally for the data copying.
 
     while True:
         sent = sendfile(sock.fileno(), file.fileno(), offset, blocksize)
+        offset += sent
         if sent == 0:
             break  # EOF
-        offset += sent
 
 ==================
 A simple benchmark
@@ -134,7 +135,7 @@ sendfile module provides a single function: sendfile().
   discouraged
   (`send() <http://docs.python.org/library/socket.html#socket.socket.send>`__ or
   `sendall() <http://docs.python.org/library/socket.html#socket.socket.sendall>`__
-  can be used instead). On Solaris, _out_ may be the file descriptor of a
+  can be used instead). On Solaris, *out* may be the file descriptor of a
   regular file or the file descriptor of a socket. On all other platforms,
   *out* must be the file descriptor of an open socket.
   *flags* argument is only supported on FreeBSD.
@@ -143,7 +144,7 @@ sendfile module provides a single function: sendfile().
 - ``sendfile.SF_MNOWAIT``
 - ``sendfile.SF_SYNC``
 
-  Parameters for the _flags_ argument, if the implementation supports it. They
+  Parameters for the *flags* argument, if the implementation supports it. They
   are available on FreeBSD platforms. See `FreeBSD's man sendfile(2) <http://www.freebsd.org/cgi/man.cgi?query=sendfile&sektion=2>`__.
 
 =======================
@@ -157,6 +158,9 @@ Differences with send()
   There might be problems with non regular filesystems such as NFS,
   SMBFS/Samba and CIFS. For this please refer to
   `proftpd documentation <http://www.proftpd.org/docs/howto/Sendfile.html>`__.
+- since the file is sent "as is" sendfile(2) can only be used with clear-text
+  sockets (meaning `SSL <https://docs.python.org/2/library/ssl.html>`__
+  is not supported).
 - `OSError <http://docs.python.org/library/exceptions.html#exceptions.OSError>`__
   is raised instead of `socket.error <http://docs.python.org/library/socket.html#socket.error>`__.
   The accompaining `error codes <http://docs.python.org/library/errno.html>`__
@@ -175,7 +179,7 @@ Non-blocking IO
   send a chunk of data over a socket fd which is not "ready" you'll immediately
   get EAGAIN (then you can retry later by using `select()`, `epoll()` or
   whatever).
-- the regular file fd, on the other hand, *can* block
+- the regular file fd, on the other hand, *can* block.
 
 ===================
 Supported platforms
