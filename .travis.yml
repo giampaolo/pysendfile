@@ -8,6 +8,11 @@ matrix:
         - python: 3.4
         - python: 3.5
         - python: 3.6
+        - python: 3.7
+          dist: xenial
+          sudo: true
+        - python: pypy
+        - python: pypy3
         # OSX
         - language: generic
           os: osx
