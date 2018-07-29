@@ -36,6 +36,10 @@ if [[ "$(uname -s)" == 'Darwin' ]]; then
             pyenv install 3.4.3
             pyenv virtualenv 3.4.3 pysendfile
             ;;
+        py36)
+            pyenv install 3.6.6
+            pyenv virtualenv 3.6.6 pysendfile
+            ;;
     esac
     pyenv rehash
     pyenv activate pysendfile
