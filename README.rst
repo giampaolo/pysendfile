@@ -1,3 +1,7 @@
+.. image:: http://pepy.tech/badge/pysendfile
+    :target: http://pepy.tech/project/pysendfile
+    :alt: Downloads
+
 .. image:: https://api.travis-ci.org/giampaolo/pysendfile.png?branch=master
     :target: https://travis-ci.org/giampaolo/pysendfile
     :alt: Linux tests (Travis)
