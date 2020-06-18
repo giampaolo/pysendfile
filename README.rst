@@ -18,8 +18,6 @@
     :target: https://pypi.python.org/pypi/pysendfile/
     :alt: License
     
-**Note: this package is a backport of `os.sendfile <https://docs.python.org/3/library/os.html#os.sendfile>`__ for Python 2.6 and 2.7**
-
 ===========
 Quick links
 ===========
