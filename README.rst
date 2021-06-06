@@ -18,18 +18,16 @@
     :target: https://pypi.python.org/pypi/pysendfile/
     :alt: License
 
-===========
-Quick links
-===========
-
-- `Home page <https://github.com/giampaolo/pysendfile>`_
-- `Mailing list <http://groups.google.com/group/py-sendfile>`_
-- `Blog <http://grodola.blogspot.com/search/label/pysendfile>`_
-- `What's new <https://github.com/giampaolo/pysendfile/blob/master/HISTORY.rst>`_
-
 =====
 About
 =====
+
+A backport of `os.sendfile() <https://docs.python.org/3/library/os.html#os.sendfile>`__
+for Python 2.6 and 2.7 (see `BPO-10882 <https://bugs.python.org/issue10882>`__).
+
+===========
+Explanation
+===========
 
 `sendfile(2) <http://linux.die.net/man/2/sendfile>`__ is a system call which
 provides a "zero-copy" way of copying data from one file descriptor to another
@@ -203,22 +201,6 @@ The supported platforms are:
 - **Dragon Fly BSD**
 - **Sun OS**
 - **AIX** (not properly tested)
-
-=======
-Support
-=======
-
-Feel free to mail me at *g.rodola [AT] gmail [DOT] com* or post on the the
-mailing list: http://groups.google.com/group/py-sendfile.
-
-======
-Status
-======
-
-As of now the code includes a solid `test suite <https://github.com/giampaolo/pysendfile/blob/master/test/test_sendfile.py>`__ and its ready for production use.
-It's included in `pyftpdlib <http://code.google.com/p/pyftpdlib/>`__
-project and used in production environments for years without any problem being
-reported so far.
 
 =======
 Authors
