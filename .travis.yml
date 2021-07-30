@@ -5,10 +5,10 @@ matrix:
     include:
         # Linux
         - python: 2.7
-        - python: 3.4
-        - python: 3.5
         - python: 3.6
         - python: 3.7
+        - python: 3.8
+        - python: 3.9
           dist: xenial
           sudo: true
         - python: pypy
@@ -19,7 +19,7 @@ matrix:
           env: PYVER=py27
         - language: generic
           os: osx
-          env: PYVER=py36
+          env: PYVER=py39
 install:
     - ./.ci/travis/install.sh
 script:

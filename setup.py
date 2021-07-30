@@ -24,10 +24,11 @@
 # ======================================================================
 
 import sys
+
 try:
-    from setuptools import setup, Extension
+    from setuptools import Extension, setup
 except ImportError:
-    from distutils.core import setup, Extension
+    from distutils.core import Extension, setup
 
 
 NAME = 'pysendfile'
@@ -75,6 +76,8 @@ def main():
               'Programming Language :: Python :: 3.5',
               'Programming Language :: Python :: 3.6',
               'Programming Language :: Python :: 3.7',
+              'Programming Language :: Python :: 3.8',
+              'Programming Language :: Python :: 3.9',
               'Topic :: System :: Networking',
               'Topic :: System :: Operating System',
               'Topic :: Internet :: File Transfer Protocol (FTP)',
